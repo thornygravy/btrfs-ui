@@ -1,0 +1,4 @@
+Data, RAID1: total=268435456, used=41943040
+System, RAID1: total=33554432, used=16384
+Metadata, RAID1: total=134217728, used=360448
+GlobalReserve, single: total=5767168, used=0

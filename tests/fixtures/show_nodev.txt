@@ -1,0 +1,5 @@
+Label: 'testpool'  uuid: 81182bc3-6b88-4f7b-83b7-33f99a1f706e
+	Total devices 2 FS bytes used 42319872
+	devid    1 size 0 used 0 path /dev/loop0 MISSING
+	devid    2 size 0 used 0 path /dev/loop1 MISSING
+

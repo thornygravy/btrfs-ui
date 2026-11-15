@@ -1,0 +1,5 @@
+ID 258 gen 73 top level 5 path snaps/data-1
+ID 259 gen 64 top level 5 path snaps/home-1
+ID 261 gen 73 top level 260 path @data/.snapshots/1/snapshot
+ID 262 gen 73 top level 260 path @data/.snapshots/2/snapshot
+ID 263 gen 73 top level 260 path @data/.snapshots/3/snapshot

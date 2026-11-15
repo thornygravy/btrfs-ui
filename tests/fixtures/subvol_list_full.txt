@@ -1,0 +1,9 @@
+ID 256 gen 78 cgen 7 parent 5 top level 5 parent_uuid -                                    received_uuid -                                    uuid 38c54ea6-edaf-6845-b6f5-b39552dca90e path @data
+ID 257 gen 82 cgen 7 parent 5 top level 5 parent_uuid -                                    received_uuid -                                    uuid db6682ff-8b93-6e4e-940f-e02897251ea0 path @home
+ID 258 gen 73 cgen 7 parent 5 top level 5 parent_uuid 38c54ea6-edaf-6845-b6f5-b39552dca90e received_uuid -                                    uuid f59a3668-0f44-854f-a48d-61ff32525420 path snaps/data-1
+ID 259 gen 64 cgen 8 parent 5 top level 5 parent_uuid db6682ff-8b93-6e4e-940f-e02897251ea0 received_uuid -                                    uuid 0d349964-2a61-6747-9eee-f0c08fd1b2d7 path snaps/home-1
+ID 260 gen 80 cgen 42 parent 256 top level 256 parent_uuid -                                    received_uuid -                                    uuid 6e636252-812f-9b4d-ba3d-79428ace2d72 path @data/.snapshots
+ID 261 gen 73 cgen 42 parent 260 top level 260 parent_uuid 38c54ea6-edaf-6845-b6f5-b39552dca90e received_uuid -                                    uuid bae47886-4d20-514f-b15d-69e347f13f6f path @data/.snapshots/1/snapshot
+ID 262 gen 73 cgen 43 parent 260 top level 260 parent_uuid 38c54ea6-edaf-6845-b6f5-b39552dca90e received_uuid -                                    uuid 400eab11-a113-c34b-8fbb-3b3b7d764c2c path @data/.snapshots/2/snapshot
+ID 263 gen 73 cgen 44 parent 260 top level 260 parent_uuid 38c54ea6-edaf-6845-b6f5-b39552dca90e received_uuid -                                    uuid ea046fd0-6387-1f4e-adb3-e57ac75318be path @data/.snapshots/3/snapshot
+ID 264 gen 64 cgen 47 parent 5 top level 5 parent_uuid -                                    received_uuid -                                    uuid 98bdfd77-8950-574f-9dc5-1452692378a6 path media

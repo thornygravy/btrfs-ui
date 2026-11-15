@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>btrfs-ui</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <div id="login" hidden>
+    <form id="login-form">
+      <h1 class="brand login-brand"><img class="logo" src="/static/logo.png" alt="" width="44" height="40"><span>btrfs<span class="ui">-ui</span></span></h1>
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password" required autofocus>
+      <button class="primary" type="submit">Sign in</button>
+      <p id="login-error" class="err" hidden></p>
+    </form>
+  </div>
+
+  <div id="app" hidden>
+    <header>
+      <div class="wrap">
+        <strong class="brand"><img class="logo" src="/static/logo.png" alt="" width="33" height="30"><span>btrfs<span class="ui">-ui</span></span></strong>
+        <select id="fs" title="Filesystem"></select>
+        <span class="spacer"></span>
+        <span id="ro-badge" class="badge warn" hidden>read-only</span>
+        <button id="logout" hidden>Sign out</button>
+      </div>
+    </header>
+    <nav><div class="wrap" id="tabs"></div></nav>
+    <div class="wrap notice-wrap" id="notice-wrap" hidden><div id="notice"></div></div>
+    <main class="wrap" id="view"></main>
+    <footer id="footer"></footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
