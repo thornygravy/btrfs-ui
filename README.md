@@ -76,7 +76,22 @@ JS front end with no build step. It follows your light or dark system setting.
 
 The footer shows the btrfs-ui version, so after an update you can tell which build is
 actually running. To update, replace the files and run `docker compose up -d --build`
-again; without `--build` Compose keeps using the old image.
+again; without `--build` Compose keeps using the old image. (With the prebuilt image,
+update with `docker compose pull && docker compose up -d`.)
+
+### Prebuilt image
+
+If you would rather not build it yourself, pull the published image instead. In
+`docker-compose.yml`, replace the line `build: .` with:
+
+```yaml
+    image: ghcr.io/thornygravy/btrfs-ui:latest
+```
+
+then run `docker compose pull && docker compose up -d`. Images are published for `amd64`
+and `arm64`. `latest` follows the main branch; release builds are also tagged with their
+version (`1.1.0`, `1.1`), which is the better choice if you want updates to be a decision
+rather than a surprise.
 
 ### OpenMediaVault
 
