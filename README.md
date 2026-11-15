@@ -1,6 +1,6 @@
 <p align="center">
   <img src="docs/logo.png" alt="btrfs-ui logo" height="120">
-</p>
+</p><br>
 
 <h1 align="center">btrfs-ui</h1><br>
 
