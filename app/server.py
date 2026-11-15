@@ -15,7 +15,7 @@ from .fs import ApiError, Registry
 
 log = logging.getLogger("btrfs-ui")
 B = btrfs.BTRFS
-VERSION = "1.1"
+VERSION = "1.0"
 
 
 def create_app(cfg=None):
