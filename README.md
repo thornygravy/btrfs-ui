@@ -2,10 +2,10 @@
   <img src="docs/logo.png" alt="btrfs-ui logo" height="120">
 </p>
 
-<h1 align="center">btrfs-ui</h1>
+<h1 align="center">btrfs-ui</h1><br>
 
 <p align="center">
-  A small web UI for btrfs on headless servers, packaged as a single Docker container.<br>
+  A small web UI for btrfs on headless servers, packaged as a docker container.<br>
   Space and device health, subvolumes and snapshots, snapper, scrub, balance, defrag and trim.
 </p>
 
