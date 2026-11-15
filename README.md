@@ -93,23 +93,6 @@ and `arm64`. `latest` follows the main branch; release builds are also tagged wi
 version (`1.1.0`, `1.1`), which is the better choice if you want updates to be a decision
 rather than a surprise.
 
-### OpenMediaVault
-
-OpenMediaVault mounts its filesystems under `/srv/dev-disk-by-uuid-<uuid>` (or
-`/srv/dev-disk-by-label-<label>`). Find yours with `findmnt -t btrfs` and use that path on
-both sides of the bind mount:
-
-```yaml
-volumes:
-  - /srv/dev-disk-by-uuid-0123abcd-...:/srv/dev-disk-by-uuid-0123abcd-...
-  - /var/lib/btrfs:/var/lib/btrfs
-```
-
-A pool mounted with default options is normally the top level, so one mount is enough. If
-the Subvolumes tab warns that the top level is not mounted, mount it separately as in step 1.
-The `/var/lib/btrfs` line is what lets the UI show scrubs that OpenMediaVault runs on its
-schedule, see "Scrub history" below.
-
 ## What the container needs
 
 | Setting | Why |
@@ -128,10 +111,10 @@ is not visible to a container that is already running.
 
 `btrfs scrub status` reads its history from `/var/lib/btrfs/scrub.status.<UUID>`, and
 that file lives on the host. The compose file bind-mounts the host's `/var/lib/btrfs`
-into the container, so the UI shows scrubs that were started elsewhere (cron,
-OpenMediaVault's scheduled scrub, a shell) as well as the ones you start here. If you
-replace that mount with a Docker volume or drop it, the container sees an empty directory
-and every filesystem reports "never run".
+into the container, so the UI shows scrubs that were started elsewhere (a cron job, a
+shell) as well as the ones you start here. If you replace that mount with a Docker volume
+or drop it, the container sees an empty directory and every filesystem reports
+"never run".
 
 ### Snapper
 
