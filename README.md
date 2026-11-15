@@ -5,7 +5,7 @@
 <h1 align="center">btrfs-ui</h1>
 
 <p align="center">
-  A small web UI for btrfs on headless servers, packaged as a docker container.<br>
+  A small web UI for btrfs on headless servers, packaged as a single Docker container.<br>
   Space and device health, subvolumes and snapshots, snapper, scrub, balance, defrag and trim.
 </p>
 
@@ -56,42 +56,38 @@ JS front end with no build step. It follows your light or dark system setting.
    sudo mount -o subvolid=5 /dev/sdX /mnt/btrfs-root     # add a matching line to /etc/fstab
    ```
 
-2. Set a password and your paths:
+2. Download the compose file and set a password:
 
    ```sh
+   mkdir btrfs-ui && cd btrfs-ui
+   curl -O https://raw.githubusercontent.com/thornygravy/btrfs-ui/main/docker-compose.yml
+   curl -O https://raw.githubusercontent.com/thornygravy/btrfs-ui/main/.env.example
    cp .env.example .env          # then put your password in .env
    ```
 
-   Edit the volume paths in `docker-compose.yml` to match your mount points.
-   `.env` is git-ignored; if your password contains a `$`, wrap it in single quotes.
+   Edit the volume paths in `docker-compose.yml` to match your mount points. If your
+   password contains a `$`, wrap it in single quotes.
 
 3. Start it:
 
    ```sh
-   docker compose up -d --build
+   docker compose up -d
    ```
 
-4. Open <http://localhost:8080>. From another machine use an SSH tunnel
-   (`ssh -L 8080:localhost:8080 yourserver`) or see "Security" below.
+4. Open `http://<your-server-ip>:8080` from any machine on your network.
 
-The footer shows the btrfs-ui version, so after an update you can tell which build is
-actually running. To update, replace the files and run `docker compose up -d --build`
-again; without `--build` Compose keeps using the old image. (With the prebuilt image,
-update with `docker compose pull && docker compose up -d`.)
+To update, run `docker compose pull && docker compose up -d`. The footer shows the
+btrfs-ui version, so you can always tell which one is running.
 
-### Prebuilt image
+Images are published for `amd64` and `arm64`. `latest` follows the main branch. If you
+would rather update on purpose than by surprise, pin a release in the compose file, for
+example `ghcr.io/thornygravy/btrfs-ui:1.0` (releases are tagged `1.0.0` and `1.0`).
 
-If you would rather not build it yourself, pull the published image instead. In
-`docker-compose.yml`, replace the line `build: .` with:
+### Build it yourself
 
-```yaml
-    image: ghcr.io/thornygravy/btrfs-ui:latest
-```
-
-then run `docker compose pull && docker compose up -d`. Images are published for `amd64`
-and `arm64`. `latest` follows the main branch; release builds are also tagged with their
-version (`1.1.0`, `1.1`), which is the better choice if you want updates to be a decision
-rather than a surprise.
+Clone or download this repository, then in `docker-compose.yml` comment out the `image:`
+line and uncomment `build: .`. Start it with `docker compose up -d --build`; without
+`--build`, Compose keeps using an image you built earlier.
 
 ## What the container needs
 
@@ -161,9 +157,10 @@ it like root access to the storage.
 
 - The container refuses to start without a password (or with an obvious placeholder).
   Login attempts are rate limited.
-- The compose file publishes the port on `127.0.0.1` only. To expose it on your LAN,
-  put a reverse proxy with HTTPS in front (Caddy, nginx, Traefik) and set
-  `BTRFS_UI_COOKIE_SECURE=1`. The password is sent in clear text over plain HTTP.
+- The compose file publishes port 8080 so you can reach the UI from anywhere on your
+  LAN. Keep it on your LAN and do not forward the port to the internet. The password is
+  sent in clear text over plain HTTP; if you want HTTPS, put a reverse proxy in front
+  (Caddy, nginx, Traefik) and set `BTRFS_UI_COOKIE_SECURE=1`.
 - The session cookie is `HttpOnly` and `SameSite=Strict`, and every change needs a
   custom request header, which blocks cross-site requests.
 - Every path you type is resolved and must end up inside a mounted btrfs filesystem
@@ -195,8 +192,8 @@ adding or removing devices.
 - **Scrub says "never run"**: the host's `/var/lib/btrfs` is not mounted into the
   container, or that filesystem really has no scrub history. Compare the UUID on the
   Overview tab with the file names in `/var/lib/btrfs` on the host.
-- **A change I made does not show up**: rebuild with `docker compose up -d --build` and
-  check the version in the footer.
+- **An update does not show up**: run `docker compose pull && docker compose up -d` and
+  check the version in the footer. If you build it yourself, add `--build` instead.
 - **Snapper tab is empty**: see "Snapper" above; the configs and the snapshotted
   directories both have to be mounted at the same paths as on the host.
 
