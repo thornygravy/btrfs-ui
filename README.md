@@ -45,7 +45,7 @@ We love btrfs-assistant, but unfortunately it is a desktop app, and remembering 
 This little app bridges the gap between running a whole desktop gui and only using cli commands. It's about time btrfs had a dedicated lightweight docker container so that you can manage your headless servers from a browser.
 
 This build contains a Flask backend that runs `btrfs` and `snapper`, with some plain HTML, CSS and a JS front end.
-<br>
+<br><br>
 
 ## Features
 
@@ -61,7 +61,7 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
 Not included compared with btrfs-assistant: deduplication (bees/duperemove),
 btrfsmaintenance configuration, enabling or disabling quotas, snapper rollback, and
 adding or removing devices.
-<br>
+<br><br>
 
 ## Docker Compose
 
@@ -91,7 +91,7 @@ adding or removing devices.
 Change the password (container will refuse to start otherwise), then head to: http://ip-of-sever:8008 .
 
 Feel free to build the image from scratch.
-<br>
+<br><br>
 
 ## Requirements
 
@@ -133,7 +133,7 @@ volumes:
   - /etc/snapper:/etc/snapper
   - /srv/photos:/srv/photos      # a config with SUBVOLUME="/srv/photos"
 ```
-<br>
+<br><br>
 
 ## Configuration
 
@@ -149,7 +149,7 @@ All through environment variables.
 | `BTRFS_UI_SECRET` | random | Session signing key. Set it if you want logins to survive restarts. |
 | `BTRFS_UI_HOST` / `BTRFS_UI_PORT` | `0.0.0.0` / `8080` | Listen address inside the container. |
 | `BTRFS_UI_SNAPPER_ROOT` | – | Experimental, see above. |
-<br>
+<br><br>
 
 ## Security
 
@@ -170,7 +170,7 @@ it like root access to the storage.
   mounted in the container.
 - `BTRFS_UI_READONLY=1` is a good way to try it out: everything is visible, nothing can
   be changed.
-  <br>
+  <br><br>
   
 
 ## Build it yourself
@@ -191,7 +191,7 @@ line and uncomment `build: .`. Start it with `docker compose up -d --build`.
   check the version in the footer. If you build it yourself, add `--build` instead.
 - **Snapper tab is empty**: see "Snapper" above; the configs and the snapshotted
   directories both have to be mounted at the same paths as on the host.
-  <br>
+  <br><br>
   
 
 ## Development
@@ -206,7 +206,7 @@ BTRFS_UI_AUTH=off BTRFS_UI_PORT=8080 python -m app      # run without Docker
 The parsers are tested against output captured from btrfs-progs 6.6.3 and snapper
 0.10.6 (`tests/fixtures`). The integration tests create a btrfs filesystem on a
 loopback file and are skipped when that is not possible.
-<br>
+<br><br>
 
 ## License
 
