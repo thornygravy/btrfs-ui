@@ -147,7 +147,7 @@ All through environment variables.
 | `BTRFS_UI_READONLY` | off | `1` = view everything, change nothing. |
 | `BTRFS_UI_COOKIE_SECURE` | off | `1` when served over HTTPS. |
 | `BTRFS_UI_SECRET` | random | Session signing key. Set it if you want logins to survive restarts. |
-| `BTRFS_UI_HOST` / `BTRFS_UI_PORT` | `0.0.0.0` / `8080` | Listen address inside the container. |
+| `BTRFS_UI_HOST` / `BTRFS_UI_PORT` | `0.0.0.0` / `8008` | Listen address inside the container. |
 | `BTRFS_UI_SNAPPER_ROOT` | – | Experimental, see above. |
 <br>
 
@@ -200,7 +200,7 @@ line and uncomment `build: .`. Start it with `docker compose up -d --build`.
 pip install -r requirements.txt pytest
 python -m pytest tests            # parsers, API, and a loopback-btrfs integration test (needs root)
 
-BTRFS_UI_AUTH=off BTRFS_UI_PORT=8080 python -m app      # run without Docker
+BTRFS_UI_AUTH=off BTRFS_UI_PORT=8008 python -m app      # run without Docker
 ```
 
 The parsers are tested against output captured from btrfs-progs 6.6.3 and snapper
