@@ -65,7 +65,7 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
          # BTRFS_UI_READONLY: "1"                # browse only, no changes
          # BTRFS_UI_COOKIE_SECURE: "1"           # set when served over HTTPS
        volumes:
-         - /mnt/btrfs-root:/mnt/btrfs-root     # mounting the top level (subvolid=5) makes subvolumes reachable
+         - /mnt/btrfs-root:/mnt/btrfs-root     # mount top level (subvolid=5) to make subvolumes reachable
          - /var/lib/btrfs:/var/lib/btrfs     # scrub history
          # Only for the Snapper tab: snapper configs from the host, plus each directory
          # a config points at, at the same path as on the host. For example:
@@ -74,6 +74,7 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
    ```
 
   Change the password (container will refuse to start otherwise), then head to: http://ip-of-sever:8008 .
+  
 
 ### Build it yourself
 
