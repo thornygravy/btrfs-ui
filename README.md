@@ -89,8 +89,6 @@ adding or removing devices.
    ```
 
 Change the password (container will refuse to start otherwise), then head to: http://ip-of-sever:8008 .
-
-Feel free to build the image from scratch.
 <br><br>
 
 ## Requirements
