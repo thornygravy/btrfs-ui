@@ -88,7 +88,7 @@ adding or removing devices.
        restart: unless-stopped
    ```
 
-Change the password (the container refuses to start otherwise), then open http://<your-server-ip>:8008.
+Change the password (the container refuses to start otherwise), then open `http://<your-server-ip>:8008` in a browser.
 <br><br>
 
 ## Requirements
