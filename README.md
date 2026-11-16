@@ -175,8 +175,8 @@ it like root access to the storage.
 
 ## Build it yourself
 
-Clone or download this repository, then in `docker-compose.yml` comment out the `image:`
-line and uncomment `build: .`. Start it with `docker compose up -d --build`.
+Clone or download this repository, then in `docker-compose.yml` replace the `image:`
+line with `build: .`. Start it with `docker compose up -d --build`.
 <br><br>
 
 
