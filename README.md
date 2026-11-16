@@ -44,7 +44,7 @@ We love btrfs-assistant, but unfortunately it is a desktop app, and remembering 
 
 This little app bridges the gap between running a whole desktop gui and only using cli commands. It's about time btrfs had a dedicated lightweight docker container so that you can manage your headless servers from a browser.
 
-This build contains a Flask backend that runs `btrfs` and `snapper`, with some plain HTML, CSS and a JS front end.
+This build contains a Flask backend that runs `btrfs` and `snapper`, with some plain HTML, CSS and a JS front end.<br>
 
 ## Features
 
@@ -59,7 +59,7 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
 
 Not included compared with btrfs-assistant: deduplication (bees/duperemove),
 btrfsmaintenance configuration, enabling or disabling quotas, snapper rollback, and
-adding or removing devices.
+adding or removing devices.<br>
 
 ## Docker Compose
 
@@ -88,7 +88,7 @@ adding or removing devices.
 
 Change the password (container will refuse to start otherwise), then head to: http://ip-of-sever:8008 .
 
-Feel free to build the image from scratch.
+Feel free to build the image from scratch.<br>
 
 ## Requirements
 
@@ -111,7 +111,7 @@ that file lives on the host. The compose file bind-mounts the host's `/var/lib/b
 into the container, so the UI shows scrubs that were started elsewhere (a cron job, a
 shell) as well as the ones you start here. If you replace that mount with a Docker volume
 or drop it, the container sees an empty directory and every filesystem reports
-"never run".
+"never run".<br>
 
 ### Snapper
 
@@ -130,6 +130,7 @@ volumes:
   - /etc/snapper:/etc/snapper
   - /srv/photos:/srv/photos      # a config with SUBVOLUME="/srv/photos"
 ```
+<br>
 
 ## Configuration
 
@@ -145,7 +146,7 @@ All through environment variables.
 | `BTRFS_UI_SECRET` | random | Session signing key. Set it if you want logins to survive restarts. |
 | `BTRFS_UI_HOST` / `BTRFS_UI_PORT` | `0.0.0.0` / `8080` | Listen address inside the container. |
 | `BTRFS_UI_SNAPPER_ROOT` | – | Experimental, see above. |
-
+<br>
 
 ## Security
 
@@ -165,13 +166,13 @@ it like root access to the storage.
 - Deleting is refused for the top-level subvolume, the default subvolume and anything
   mounted in the container.
 - `BTRFS_UI_READONLY=1` is a good way to try it out: everything is visible, nothing can
-  be changed.
+  be changed.<br>
   
 
 ## Build it yourself
 
 Clone or download this repository, then in `docker-compose.yml` comment out the `image:`
-line and uncomment `build: .`. Start it with `docker compose up -d --build`.
+line and uncomment `build: .`. Start it with `docker compose up -d --build`.<br>
 
 
 ## Troubleshooting
@@ -184,7 +185,7 @@ line and uncomment `build: .`. Start it with `docker compose up -d --build`.
 - **An update does not show up**: run `docker compose pull && docker compose up -d` and
   check the version in the footer. If you build it yourself, add `--build` instead.
 - **Snapper tab is empty**: see "Snapper" above; the configs and the snapshotted
-  directories both have to be mounted at the same paths as on the host.
+  directories both have to be mounted at the same paths as on the host.<br>
   
 
 ## Development
@@ -198,7 +199,7 @@ BTRFS_UI_AUTH=off BTRFS_UI_PORT=8080 python -m app      # run without Docker
 
 The parsers are tested against output captured from btrfs-progs 6.6.3 and snapper
 0.10.6 (`tests/fixtures`). The integration tests create a btrfs filesystem on a
-loopback file and are skipped when that is not possible.
+loopback file and are skipped when that is not possible.<br>
 
 ## License
 
