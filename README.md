@@ -46,6 +46,21 @@ This little app bridges the gap between running a whole desktop gui and only usi
 
 This build contains a Flask backend that runs `btrfs` and `snapper`, with some plain HTML, CSS and a JS front end.
 
+## Features
+
+- **Overview**: raw/allocated/used/free space, allocation by profile, per-device size and
+  error counters, scrub and balance state, raw `filesystem usage`.
+- **Subvolumes**: list with snapshot / read-only / mounted flags and creation time,
+  sizes when quotas are enabled, create, snapshot, toggle read-only, delete.
+- **Snapper**: list, create and delete snapshots, compare two snapshots, edit the
+  timeline/number retention settings, run cleanup.
+- **Maintenance**: scrub (start, cancel, resume), balance with usage filters, defragment
+  (with optional recompression), trim, and a list of background jobs with their output.
+
+Not included compared with btrfs-assistant: deduplication (bees/duperemove),
+btrfsmaintenance configuration, enabling or disabling quotas, snapper rollback, and
+adding or removing devices.
+
 ## Docker Compose
 
    ```yaml
@@ -131,6 +146,7 @@ All through environment variables.
 | `BTRFS_UI_HOST` / `BTRFS_UI_PORT` | `0.0.0.0` / `8080` | Listen address inside the container. |
 | `BTRFS_UI_SNAPPER_ROOT` | – | Experimental, see above. |
 
+
 ## Security
 
 This UI can delete subvolumes and snapshots and start long, heavy operations, so treat
@@ -150,21 +166,13 @@ it like root access to the storage.
   mounted in the container.
 - `BTRFS_UI_READONLY=1` is a good way to try it out: everything is visible, nothing can
   be changed.
+  
 
-## Features
+## Build it yourself
 
-- **Overview**: raw/allocated/used/free space, allocation by profile, per-device size and
-  error counters, scrub and balance state, raw `filesystem usage`.
-- **Subvolumes**: list with snapshot / read-only / mounted flags and creation time,
-  sizes when quotas are enabled, create, snapshot, toggle read-only, delete.
-- **Snapper**: list, create and delete snapshots, compare two snapshots, edit the
-  timeline/number retention settings, run cleanup.
-- **Maintenance**: scrub (start, cancel, resume), balance with usage filters, defragment
-  (with optional recompression), trim, and a list of background jobs with their output.
+Clone or download this repository, then in `docker-compose.yml` comment out the `image:`
+line and uncomment `build: .`. Start it with `docker compose up -d --build`.
 
-Not included compared with btrfs-assistant: deduplication (bees/duperemove),
-btrfsmaintenance configuration, enabling or disabling quotas, snapper rollback, and
-adding or removing devices.
 
 ## Troubleshooting
 
@@ -177,6 +185,7 @@ adding or removing devices.
   check the version in the footer. If you build it yourself, add `--build` instead.
 - **Snapper tab is empty**: see "Snapper" above; the configs and the snapshotted
   directories both have to be mounted at the same paths as on the host.
+  
 
 ## Development
 
