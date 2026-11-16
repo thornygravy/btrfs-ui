@@ -6,7 +6,7 @@
 
 <p align="center">
   A small web UI for btrfs on headless servers, packaged in a docker container.<br>
-  Space and device health, subvolumes and snapshots, snapper, scrub, balance, defrag and trim.
+  Supports space and device health, subvolumes and snapshots, snapper, scrub, balance, defrag and trim.
 </p><br>
 
 <table>
@@ -43,7 +43,7 @@
 btrfs-assistant is a great tool, but it is a desktop app, and running it on a server means
 putting a whole graphical session on the box. This does the useful parts from a browser
 instead: a Flask backend that runs `btrfs` and `snapper` for you, and a plain HTML, CSS and
-JS front end with no build step. It follows your light or dark system setting.
+JS front end.
 
 ## Quick start
 
