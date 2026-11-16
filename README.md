@@ -133,7 +133,7 @@ volumes:
   - /etc/snapper:/etc/snapper
   - /srv/photos:/srv/photos      # a config with SUBVOLUME="/srv/photos"
 ```
-<br><br>
+<br>
 
 ## Configuration
 
