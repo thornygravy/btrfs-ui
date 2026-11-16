@@ -5,7 +5,7 @@
 <h1 align="center">btrfs-ui</h1><br>
 
 <p align="center">
-  A small web UI for btrfs on headless servers, packaged in a docker container.<br>
+  A small web UI for managing btrfs on headless servers, packaged in a docker container.<br>
   Supports space and device health, subvolumes and snapshots, snapper, scrub, balance, defrag and trim.
 </p><br>
 
