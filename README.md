@@ -40,10 +40,9 @@
   </tr>
 </table>
 
-btrfs-assistant is a great tool, but it is a desktop app, and running it on a server means
-putting a whole graphical session on the box. This does the useful parts from a browser
-instead: a Flask backend that runs `btrfs` and `snapper` for you, and a plain HTML, CSS and
-JS front end.
+We love btrfs-assistant, but unfortunately it is a desktop app, and remembering cli commands can be annoying. This little app bridges the gap between running a whole desktop gui and only using cli commands. It's about time btrfs had a dedicated lightweight docker container so that you can manage your headless servers from a browser.
+
+This build contains a Flask backend that runs `btrfs` and `snapper`, with some plain HTML, CSS and a JS front end.
 
 ## Quick start
 
@@ -86,10 +85,9 @@ example `ghcr.io/thornygravy/btrfs-ui:1.0` (releases are tagged `1.0.0` and `1.0
 ### Build it yourself
 
 Clone or download this repository, then in `docker-compose.yml` comment out the `image:`
-line and uncomment `build: .`. Start it with `docker compose up -d --build`; without
-`--build`, Compose keeps using an image you built earlier.
+line and uncomment `build: .`. Start it with `docker compose up -d --build`.
 
-## What the container needs
+## Requirements
 
 | Setting | Why |
 | --- | --- |
@@ -157,7 +155,7 @@ it like root access to the storage.
 
 - The container refuses to start without a password (or with an obvious placeholder).
   Login attempts are rate limited.
-- The compose file publishes port 8080 so you can reach the UI from anywhere on your
+- The compose file publishes port 8008 so you can reach the UI from anywhere on your
   LAN. Keep it on your LAN and do not forward the port to the internet. The password is
   sent in clear text over plain HTTP; if you want HTTPS, put a reverse proxy in front
   (Caddy, nginx, Traefik) and set `BTRFS_UI_COOKIE_SECURE=1`.
