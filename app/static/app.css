@@ -158,6 +158,8 @@ dl.kv dd { margin: 0; word-break: break-word; }
 label.check { display: inline-flex; align-items: center; gap: 0.4286rem; }
 .card + .card { margin-top: 1rem; }
 .row { display: flex; gap: 0.7143rem; align-items: center; flex-wrap: wrap; margin-top: 0.8571rem; }
+/* A text field in a row gives up width before the row wraps. */
+.row input.grow { flex: 1 1 8rem; min-width: 8rem; max-width: 23rem; width: auto; }
 .empty { padding: 2rem 0; color: var(--muted); }
 pre {
   margin: 0.5714rem 0 0; padding: 0.8571rem; background: var(--soft); border: 1px solid var(--line);
