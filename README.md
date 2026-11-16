@@ -177,7 +177,7 @@ it like root access to the storage.
 
 Clone or download this repository, then in `docker-compose.yml` comment out the `image:`
 line and uncomment `build: .`. Start it with `docker compose up -d --build`.
-<br>
+<br><br>
 
 
 ## Troubleshooting
