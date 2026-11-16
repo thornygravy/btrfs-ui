@@ -53,11 +53,10 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
      btrfs-ui:
        image: ghcr.io/thornygravy/btrfs-ui:latest
        container_name: btrfs-ui
-       restart: unless-stopped
        ports:
          - "8008:8008"
        cap_add:
-         - SYS_ADMIN            # required for btrfs ioctls (subvolume delete, scrub, balance, ...)
+         - SYS_ADMIN           # required for btrfs ioctls (subvolume delete, scrub, balance, ...)
        security_opt:
          - no-new-privileges:true
        environment:
@@ -65,12 +64,11 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
          # BTRFS_UI_READONLY: "1"                # browse only, no changes
          # BTRFS_UI_COOKIE_SECURE: "1"           # set when served over HTTPS
        volumes:
-         - /mnt/btrfs-root:/mnt/btrfs-root     # mount top level (subvolid=5) to make subvolumes reachable
+         - /mnt/btrfs-root:/mnt/btrfs-root     # top level (subvolid=5) to make subvolumes reachable
          - /var/lib/btrfs:/var/lib/btrfs     # scrub history
-         # Only for the Snapper tab: snapper configs from the host, plus each directory
-         # a config points at, at the same path as on the host. For example:
-         # - /etc/snapper:/etc/snapper
-         # - /mnt/btrfs-root/@data:/mnt/btrfs-root/@data
+         # - /etc/snapper:/etc/snapper     # only for the Snapper tab
+         # - /mnt/btrfs-root/@data:/mnt/btrfs-root/@data     # each config directory
+       restart: unless-stopped
    ```
 
   Change the password (container will refuse to start otherwise), then head to: http://ip-of-sever:8008 .
