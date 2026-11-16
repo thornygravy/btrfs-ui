@@ -1,29 +1,20 @@
 services:
   btrfs-ui:
     image: ghcr.io/thornygravy/btrfs-ui:latest
-    # To build it yourself instead, comment out the line above and use this one:
-    # build: .
     container_name: btrfs-ui
-    restart: unless-stopped
     ports:
       - "8008:8008"
     cap_add:
-      - SYS_ADMIN            # required for btrfs ioctls (subvolume delete, scrub, balance, ...)
+      - SYS_ADMIN           # required for btrfs ioctls (subvolume delete, scrub, balance, ...)
     security_opt:
       - no-new-privileges:true
     environment:
-      # Put the password in a .env file next to this one (see .env.example).
-      BTRFS_UI_PASSWORD: "${BTRFS_UI_PASSWORD:?Set BTRFS_UI_PASSWORD in a .env file, see .env.example}"
+      BTRFS_UI_PASSWORD: "change-me"
       # BTRFS_UI_READONLY: "1"                # browse only, no changes
       # BTRFS_UI_COOKIE_SECURE: "1"           # set when served over HTTPS
     volumes:
-      # Mount each btrfs filesystem at the SAME path as on the host. Mounting the
-      # top level (subvolid=5) makes every subvolume reachable.
-      - /mnt/btrfs-root:/mnt/btrfs-root
-      # Only for the Snapper tab: snapper configs from the host, plus each directory
-      # a config points at, at the same path as on the host. For example:
-      # - /etc/snapper:/etc/snapper
-      # - /mnt/btrfs-root/@data:/mnt/btrfs-root/@data
-      # Scrub history. btrfs keeps it in /var/lib/btrfs on the host, so share that
-      # directory rather than an empty volume.
-      - /var/lib/btrfs:/var/lib/btrfs
+      - /mnt/btrfs-root:/mnt/btrfs-root     # top level (subvolid=5) to make subvolumes reachable
+      - /var/lib/btrfs:/var/lib/btrfs     # scrub history
+      # - /etc/snapper:/etc/snapper     # only for the Snapper tab
+      # - /mnt/btrfs-root/@data:/mnt/btrfs-root/@data     # each config directory
+    restart: unless-stopped
