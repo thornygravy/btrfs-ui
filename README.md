@@ -46,19 +46,7 @@ This little app bridges the gap between running a whole desktop gui and only usi
 
 This build contains a Flask backend that runs `btrfs` and `snapper`, with some plain HTML, CSS and a JS front end.
 
-## Quick start
-
-1. Make sure the filesystem's **top level** (subvolid 5) is mounted somewhere on the host.
-   That lets the UI see every subvolume, not just the ones you happen to mount. Check
-   with `findmnt -t btrfs`. If it is not mounted yet:
-
-   ```sh
-   sudo mkdir -p /mnt/btrfs-root
-   sudo mount -o subvolid=5 /dev/sdX /mnt/btrfs-root     # add a matching line to /etc/fstab
-   ```
-
-2. Save this as `docker-compose.yml` in a new folder (for example `~/btrfs-ui`), then
-   change the password and make the volume paths match your mount points:
+## Docker Compose
 
    ```yaml
    services:
@@ -85,22 +73,7 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
          # - /mnt/btrfs-root/@data:/mnt/btrfs-root/@data
    ```
 
-   The container will not start while the password is still `change-me`.
-
-3. Start it:
-
-   ```sh
-   docker compose up -d
-   ```
-
-4. Open `http://<your-server-ip>:8008` from any machine on your network.
-
-To update, run `docker compose pull && docker compose up -d`. The footer shows the
-btrfs-ui version, so you can always tell which one is running.
-
-Images are published for `amd64` and `arm64`. `latest` follows the main branch. If you
-would rather update on purpose than by surprise, pin a release in the compose file, for
-example `ghcr.io/thornygravy/btrfs-ui:1.0` (releases are tagged `1.0.0` and `1.0`).
+  Change the password (container will refuse to start otherwise), then head to: http://ip-of-sever:8008 .
 
 ### Build it yourself
 
