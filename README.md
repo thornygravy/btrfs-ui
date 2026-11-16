@@ -71,13 +71,9 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
        restart: unless-stopped
    ```
 
-  Change the password (container will refuse to start otherwise), then head to: http://ip-of-sever:8008 .
-  
+Change the password (container will refuse to start otherwise), then head to: http://ip-of-sever:8008 .
 
-### Build it yourself
-
-Clone or download this repository, then in `docker-compose.yml` comment out the `image:`
-line and uncomment `build: .`. Start it with `docker compose up -d --build`.
+Feel free to build the image from scratch.
 
 ## Requirements
 
@@ -105,25 +101,20 @@ or drop it, the container sees an empty directory and every filesystem reports
 ### Snapper
 
 Snapper is run directly (`snapper --no-dbus`), so no daemon or D-Bus is needed. Create
-configs on the host as usual (`snapper -c data create-config /mnt/pool/@data`); the UI
-manages the snapshots, not the config creation. Each
-snapper config names a directory (`SUBVOLUME=` in `/etc/snapper/configs/<name>`). That
-exact path has to exist inside the container, so bind-mount each one at the same path
-as on the host, in addition to `/etc/snapper`:
+configs on the host as usual (`snapper -c data create-config /mnt/btrfs-root/@data`); the
+UI manages the snapshots, not the config creation.
+
+Share the configs with the container by mounting `/etc/snapper` (uncomment that line in
+the compose file). Each config also names a directory (`SUBVOLUME=` in
+`/etc/snapper/configs/<name>`), and that exact path has to exist inside the container. If
+it is inside a filesystem you already mount, like `/mnt/btrfs-root/@data` above, there is
+nothing more to do. If it is somewhere else, mount it at the same path as on the host:
 
 ```yaml
 volumes:
   - /etc/snapper:/etc/snapper
-  - /srv/data:/srv/data          # a config with SUBVOLUME="/srv/data"
+  - /srv/photos:/srv/photos      # a config with SUBVOLUME="/srv/photos"
 ```
-
-A config for the host's root filesystem (`SUBVOLUME="/"`) cannot work this way, because
-`/` inside the container is the container's own root. `BTRFS_UI_SNAPPER_ROOT=/host`
-passes `--root /host` to snapper (mount the host's `/` there); this is experimental and
-has not been tested.
-
-Rolling back to a snapshot is deliberately not offered. It is easy to get wrong from
-inside a container; do it from the host.
 
 ## Configuration
 
@@ -160,7 +151,7 @@ it like root access to the storage.
 - `BTRFS_UI_READONLY=1` is a good way to try it out: everything is visible, nothing can
   be changed.
 
-## What is in it
+## Features
 
 - **Overview**: raw/allocated/used/free space, allocation by profile, per-device size and
   error counters, scrub and balance state, raw `filesystem usage`.
