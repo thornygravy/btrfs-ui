@@ -57,17 +57,35 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
    sudo mount -o subvolid=5 /dev/sdX /mnt/btrfs-root     # add a matching line to /etc/fstab
    ```
 
-2. Download the compose file and set a password:
+2. Save this as `docker-compose.yml` in a new folder (for example `~/btrfs-ui`), then
+   change the password and make the volume paths match your mount points:
 
-   ```sh
-   mkdir btrfs-ui && cd btrfs-ui
-   curl -O https://raw.githubusercontent.com/thornygravy/btrfs-ui/main/docker-compose.yml
-   curl -O https://raw.githubusercontent.com/thornygravy/btrfs-ui/main/.env.example
-   cp .env.example .env          # then put your password in .env
+   ```yaml
+   services:
+     btrfs-ui:
+       image: ghcr.io/thornygravy/btrfs-ui:latest
+       container_name: btrfs-ui
+       restart: unless-stopped
+       ports:
+         - "8008:8008"
+       cap_add:
+         - SYS_ADMIN            # required for btrfs ioctls (subvolume delete, scrub, balance, ...)
+       security_opt:
+         - no-new-privileges:true
+       environment:
+         BTRFS_UI_PASSWORD: "change-me"
+         # BTRFS_UI_READONLY: "1"                # browse only, no changes
+         # BTRFS_UI_COOKIE_SECURE: "1"           # set when served over HTTPS
+       volumes:
+         - /mnt/btrfs-root:/mnt/btrfs-root     # mounting the top level (subvolid=5) makes subvolumes reachable
+         - /var/lib/btrfs:/var/lib/btrfs     # scrub history
+         # Only for the Snapper tab: snapper configs from the host, plus each directory
+         # a config points at, at the same path as on the host. For example:
+         # - /etc/snapper:/etc/snapper
+         # - /mnt/btrfs-root/@data:/mnt/btrfs-root/@data
    ```
 
-   Edit the volume paths in `docker-compose.yml` to match your mount points. If your
-   password contains a `$`, wrap it in single quotes.
+   The container will not start while the password is still `change-me`.
 
 3. Start it:
 
@@ -75,7 +93,7 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
    docker compose up -d
    ```
 
-4. Open `http://<your-server-ip>:8080` from any machine on your network.
+4. Open `http://<your-server-ip>:8008` from any machine on your network.
 
 To update, run `docker compose pull && docker compose up -d`. The footer shows the
 btrfs-ui version, so you can always tell which one is running.
