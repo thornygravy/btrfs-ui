@@ -149,7 +149,7 @@ All through environment variables.
 | `BTRFS_UI_SECRET` | random | Session signing key. Set it if you want logins to survive restarts. |
 | `BTRFS_UI_HOST` / `BTRFS_UI_PORT` | `0.0.0.0` / `8080` | Listen address inside the container. |
 | `BTRFS_UI_SNAPPER_ROOT` | – | Experimental, see above. |
-<br><br>
+<br>
 
 ## Security
 
