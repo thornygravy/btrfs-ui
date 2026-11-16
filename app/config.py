@@ -17,7 +17,7 @@ class Config:
         e = os.environ if env is None else env
 
         self.host = e.get("BTRFS_UI_HOST", "0.0.0.0")
-        self.port = int(e.get("BTRFS_UI_PORT", "8080"))
+        self.port = int(e.get("BTRFS_UI_PORT", "8008"))
 
         # Authentication. A password is required unless auth is switched off.
         self.auth_enabled = e.get("BTRFS_UI_AUTH", "on").strip().lower() not in (
