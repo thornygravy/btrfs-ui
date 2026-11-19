@@ -580,10 +580,10 @@ async function viewSchedules(root) {
       h('td', null,
         r.type === 'snapshot' ? h('span', null, 'Snapshot of ', h('span', { class: 'mono' }, r.source)) : 'Scrub',
         r.type === 'snapshot'
-          ? h('div', { class: 'muted' }, `into ${r.dest}/ as ${r.prefix}-…, keep ${r.keep}`) : null),
+          ? h('div', { class: 'muted' }, `${r.dest}/${r.prefix}-…, keep ${r.keep}`) : null),
       h('td', null, whenText(r)),
-      h('td', null, r.enabled ? r.next_text : badge('paused', 'warn')),
-      h('td', null,
+      h('td', { class: 'nowrap' }, r.enabled ? r.next_text : badge('paused', 'warn')),
+      h('td', { class: 'nowrap' },
         r.last_status ? badge(r.last_status, resultKind(r.last_status)) : h('span', { class: 'muted' }, 'not yet'),
         r.last_text ? h('div', { class: 'muted' }, r.last_text) : null),
       h('td', { class: 'actions' },

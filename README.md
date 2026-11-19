@@ -55,6 +55,8 @@ This build contains a Flask backend that runs `btrfs` and `snapper`, with some p
   sizes when quotas are enabled, create, snapshot, toggle read-only, delete.
 - **Snapper**: list, create and delete snapshots, compare two snapshots, edit the
   timeline/number retention settings, run cleanup.
+- **Schedules**: take snapshots on a schedule and keep only the newest few, or run a
+  scrub on a schedule. Needs the `/data` volume, see below.
 - **Maintenance**: scrub (start, cancel, resume), balance with usage filters, defragment
   (with optional recompression), trim, and a list of background jobs with their output.
 
@@ -77,12 +79,14 @@ adding or removing devices.
        security_opt:
          - no-new-privileges:true
        environment:
-         BTRFS_UI_PASSWORD: "change-me"
-         # BTRFS_UI_READONLY: "1"                # browse only, no changes
-         # BTRFS_UI_COOKIE_SECURE: "1"           # set when served over HTTPS
+         - TZ=America/New_York
+         - BTRFS_UI_PASSWORD=change-me
+         # - BTRFS_UI_READONLY=1                # browse only, no changes
+         # - BTRFS_UI_COOKIE_SECURE=1           # set when served over HTTPS
        volumes:
          - /mnt/btrfs-root:/mnt/btrfs-root     # top level (subvolid=5) to make subvolumes reachable
          - /var/lib/btrfs:/var/lib/btrfs     # scrub history
+         - ./data:/data     # schedules and their history (optional)
          # - /etc/snapper:/etc/snapper     # only for the Snapper tab
          # - /mnt/btrfs-root/@data:/mnt/btrfs-root/@data     # each config directory
        restart: unless-stopped
@@ -99,6 +103,7 @@ Change the password (the container refuses to start otherwise), then open `http:
 | Bind mounts of your btrfs mount points | The container only sees what you mount into it. Use the **same path as on the host**. |
 | `/var/lib/btrfs` from the host | btrfs stores scrub history there. Without it the UI cannot see past scrubs and says "never run". |
 | `/etc/snapper` (optional) | Only for the Snapper tab. |
+| `/data` (optional) | Only for the Schedules tab. Keeps your schedules and what they have run. |
 
 No `/dev` access is needed. It runs as root inside the container, which btrfs requires.
 
@@ -131,6 +136,32 @@ volumes:
   - /etc/snapper:/etc/snapper
   - /srv/photos:/srv/photos      # a config with SUBVOLUME="/srv/photos"
 ```
+
+### Schedules
+
+The Schedules tab runs two kinds of job on a schedule (hourly, daily, weekly or
+monthly): a snapshot of a subvolume, or a scrub.
+
+<a href="docs/screenshots/schedules-light.png"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/schedules-dark.png">
+  <img src="docs/screenshots/schedules-light.png" alt="Schedules tab" width="600">
+</picture></a>
+
+Snapshots are read-only and are named `prefix-YYYY-MM-DD_HHMM` in a folder you pick.
+After each new snapshot, the ones beyond the number you chose to keep are deleted. Only
+snapshots that schedule made are ever touched (matching name, read-only, a snapshot of
+the same subvolume), so anything you made by hand in that folder is left alone. A scrub
+is skipped if one is already running.
+
+Schedules and a short history are saved in `/data`, which is why the compose file mounts
+`./data:/data`. Without it the tab says so and nothing is scheduled. Times are the
+container's time, so set `TZ` in the compose file. If the container was down when a run
+was due, it runs once when the container starts. In read-only mode schedules are shown
+but never run.
+
+Scrubs started by cron or OMV still show up in the UI (it reads `/var/lib/btrfs`), but
+btrfs-ui does not manage those schedules. If something else already snapshots or scrubs
+on a schedule, use one or the other so you do not get doubles.
 <br>
 
 ## Configuration
@@ -147,6 +178,8 @@ All through environment variables.
 | `BTRFS_UI_SECRET` | random | Session signing key. Set it if you want logins to survive restarts. |
 | `BTRFS_UI_HOST` / `BTRFS_UI_PORT` | `0.0.0.0` / `8008` | Listen address inside the container. |
 | `BTRFS_UI_SNAPPER_ROOT` | – | Experimental, see above. |
+| `BTRFS_UI_DATA_DIR` | `/data` | Where schedules are saved. |
+| `TZ` | `UTC` | Container time zone. Schedule times, and the times snapper and scrub show, follow it. |
 <br>
 
 ## Security
@@ -189,6 +222,8 @@ line with `build: .`. Start it with `docker compose up -d --build`.
   check the version in the footer. If you build it yourself, add `--build` instead.
 - **Snapper tab is empty**: see "Snapper" above; the configs and the snapshotted
   directories both have to be mounted at the same paths as on the host.
+- **Schedules tab says schedules are off**: mount a folder at `/data` (`- ./data:/data`
+  in the compose file) and restart the container.
   <br><br>
   
 
