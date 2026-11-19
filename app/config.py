@@ -40,6 +40,10 @@ class Config:
         # Optional: pass `--root <path>` to snapper (experimental).
         self.snapper_root = e.get("BTRFS_UI_SNAPPER_ROOT") or None
 
+        # Where schedules are stored. Scheduling stays off until this directory
+        # exists, i.e. until a volume is mounted there.
+        self.data_dir = e.get("BTRFS_UI_DATA_DIR", "/data")
+
         # Where to read the mount table from (only changed by the tests).
         self.mountinfo = e.get("BTRFS_UI_MOUNTINFO", "/proc/self/mountinfo")
 
