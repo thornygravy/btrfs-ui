@@ -15,8 +15,10 @@ def main():
                         "delete subvolumes and snapshots.")
     if cfg.readonly:
         logging.info("Read-only mode: changes are disabled.")
+    app = create_app(cfg)
+    app.scheduler.start()
     logging.info("Listening on http://%s:%s", cfg.host, cfg.port)
-    serve(create_app(cfg), host=cfg.host, port=cfg.port, threads=8,
+    serve(app, host=cfg.host, port=cfg.port, threads=8,
           ident="btrfs-ui", clear_untrusted_proxy_headers=True)
 
 

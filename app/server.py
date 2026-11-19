@@ -12,6 +12,7 @@ from flask import Flask, jsonify, request, send_from_directory, session
 from . import btrfs, proc, snapper as snapper_mod
 from .config import Config
 from .fs import ApiError, Registry
+from .schedules import Scheduler
 
 log = logging.getLogger("btrfs-ui")
 B = btrfs.BTRFS
@@ -492,5 +493,37 @@ def create_app(cfg=None):
         job = jobs.start(f"Snapper cleanup ({algo}) for {name}", f"snapper:{name}",
                          snap.cleanup_args(name, algo))
         return jsonify(job=job.to_dict())
+
+    # ---- schedules ---------------------------------------------------------
+
+    app.scheduler = scheduler = Scheduler(cfg, registry, collect_subvols)
+
+    @app.get("/api/schedules")
+    def schedules_list():
+        return jsonify(scheduler.overview())
+
+    @app.post("/api/schedules")
+    @mutating
+    def schedules_create():
+        return jsonify(rule=scheduler.create(body()))
+
+    @app.post("/api/schedules/<rule_id>/enabled")
+    @mutating
+    def schedules_enabled(rule_id):
+        enabled = body().get("enabled")
+        if not isinstance(enabled, bool):
+            raise ApiError("'enabled' must be true or false")
+        return jsonify(rule=scheduler.set_enabled(rule_id, enabled))
+
+    @app.post("/api/schedules/<rule_id>/run")
+    @mutating
+    def schedules_run(rule_id):
+        return jsonify(result=scheduler.run_now(rule_id))
+
+    @app.post("/api/schedules/<rule_id>/delete")
+    @mutating
+    def schedules_delete(rule_id):
+        scheduler.delete(rule_id)
+        return jsonify(ok=True)
 
     return app

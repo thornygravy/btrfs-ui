@@ -85,6 +85,7 @@ a { color: var(--accent); }
 .warn { color: var(--warn); }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8929rem; }
 .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.nowrap { white-space: nowrap; }
 
 .panel {
   background: var(--panel); border: 1px solid var(--line); border-radius: 0.8571rem;
@@ -194,6 +195,7 @@ dialog::backdrop { background: rgba(10, 14, 18, 0.45); }
 dialog h3 { margin: 0 0 0.7143rem; font-size: 1.1429rem; }
 dialog .field { display: grid; gap: 0.2857rem; margin: 0.8571rem 0; }
 dialog .field input[type=text], dialog .field select { width: 100%; }
+dialog .field input[type=time] { width: 8.5714rem; }
 dialog .hint { color: var(--muted); font-size: 0.8929rem; }
 dialog .buttons { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 0.5714rem; margin-top: 1.4286rem; }
 dialog button.danger { background: var(--danger-btn); border-color: var(--danger-btn); color: #fff; }

@@ -106,6 +106,7 @@ function ask({ title, message, fields = [], submit = 'OK', danger = false }) {
   return new Promise((resolve) => {
     const form = h('form', { method: 'dialog' });
     const dlg = h('dialog', null, form);
+    const wrappers = [];
     form.append(h('h3', null, title));
     if (message) form.append(h('p', null, message));
     for (const f of fields) {
@@ -124,10 +125,24 @@ function ask({ title, message, fields = [], submit = 'OK', danger = false }) {
       const label = f.type === 'checkbox'
         ? h('label', { class: 'check' }, input, f.label)
         : h('label', null, f.label);
-      form.append(h('div', { class: 'field' },
+      const wrap = h('div', { class: 'field' },
         label, f.type === 'checkbox' ? null : input,
-        f.hint ? h('span', { class: 'hint' }, f.hint) : null));
+        f.hint ? h('span', { class: 'hint' }, f.hint) : null);
+      form.append(wrap);
+      wrappers.push([f, wrap, input]);
     }
+    // showIf: { name, is: [values] } shows a field only while another field has one of those values.
+    // Hidden fields are disabled so they neither block submitting nor appear in the result.
+    const syncFields = () => {
+      for (const [f, wrap, input] of wrappers) {
+        if (!f.showIf) continue;
+        const show = f.showIf.is.includes(form.elements[f.showIf.name].value);
+        wrap.hidden = !show;
+        input.disabled = !show;
+      }
+    };
+    form.addEventListener('change', syncFields);
+    syncFields();
     form.append(h('div', { class: 'buttons' },
       h('button', { class: danger ? 'danger' : 'primary', value: 'ok' }, submit),
       h('button', { value: 'cancel', formnovalidate: true }, 'Cancel')));
@@ -137,6 +152,7 @@ function ask({ title, message, fields = [], submit = 'OK', danger = false }) {
         result = {};
         for (const f of fields) {
           const el = form.elements[f.name];
+          if (el.disabled) continue;
           result[f.name] = f.type === 'checkbox' ? el.checked : el.value;
         }
       }
@@ -156,6 +172,7 @@ const TABS = [
   ['overview', 'Overview'],
   ['subvolumes', 'Subvolumes'],
   ['snapper', 'Snapper'],
+  ['schedules', 'Schedules'],
   ['maintenance', 'Maintenance'],
 ];
 
@@ -537,6 +554,149 @@ async function viewSnapper(root) {
   await loadConfig();
 }
 
+/* Schedules */
+
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+function whenText(r) {
+  const at = r.time;
+  if (r.frequency === 'hourly') return `Every hour at :${at.slice(3)}`;
+  if (r.frequency === 'daily') return `Every day at ${at}`;
+  if (r.frequency === 'weekly') return `Every ${WEEKDAYS[r.weekday]} at ${at}`;
+  return `Monthly on day ${r.monthday} at ${at}`;
+}
+
+function resultKind(status) {
+  return { ok: 'ok', error: 'err', skipped: 'warn' }[status] || '';
+}
+
+async function viewSchedules(root) {
+  const id = state.fsId;
+  const box = h('div', { class: 'stack' });
+  let sig = '';
+
+  function ruleRow(r) {
+    return h('tr', null,
+      h('td', null,
+        r.type === 'snapshot' ? h('span', null, 'Snapshot of ', h('span', { class: 'mono' }, r.source)) : 'Scrub',
+        r.type === 'snapshot'
+          ? h('div', { class: 'muted' }, `into ${r.dest}/ as ${r.prefix}-…, keep ${r.keep}`) : null),
+      h('td', null, whenText(r)),
+      h('td', null, r.enabled ? r.next_text : badge('paused', 'warn')),
+      h('td', null,
+        r.last_status ? badge(r.last_status, resultKind(r.last_status)) : h('span', { class: 'muted' }, 'not yet'),
+        r.last_text ? h('div', { class: 'muted' }, r.last_text) : null),
+      h('td', { class: 'actions' },
+        h('button', { class: 'link', disabled: ro, onclick: () => runNow(r) }, 'Run now'),
+        h('button', { class: 'link', disabled: ro, onclick: () => setEnabled(r, !r.enabled) },
+          r.enabled ? 'Pause' : 'Resume'),
+        h('button', { class: 'link danger', disabled: ro, onclick: () => remove(r) }, 'Delete')));
+  }
+
+  let ro = false;
+
+  function draw(o) {
+    ro = o.readonly;
+    const mine = o.rules.filter((r) => r.fs === id);
+    const log = o.history.filter((e) => e.fs === id).slice(0, 30);
+    newBtn.disabled = !o.enabled || o.readonly;
+    const parts = [];
+    if (!o.enabled) {
+      parts.push(h('div', { class: 'panel warn' },
+        o.missing
+          ? h('p', null, 'Schedules are off because this container has nowhere to keep them. Mount a folder at ',
+            h('span', { class: 'mono' }, o.dataDir), ' and restart, for example ',
+            h('span', { class: 'mono' }, `- ./data:${o.dataDir}`), ' under volumes in your compose file.')
+          : h('p', null, o.reason)));
+    } else if (o.readonly) {
+      parts.push(h('div', { class: 'panel warn' }, 'Read-only mode is on, so schedules are shown but will not run.'));
+    }
+    if (o.enabled) {
+      parts.push(panel(mine.length
+        ? h('table', null,
+          h('thead', null, h('tr', null, ['What', 'When', 'Next run', 'Last run', ''].map((t) => h('th', null, t)))),
+          h('tbody', null, mine.map(ruleRow)))
+        : h('p', { class: 'muted' }, 'No schedules yet for this filesystem.')));
+      parts.push(section('Recent runs', log.length
+        ? h('table', null, h('tbody', null, log.map((e) => h('tr', null,
+          h('td', { class: 'nowrap' }, e.time_text),
+          h('td', null, e.what),
+          h('td', null, badge(e.status, resultKind(e.status))),
+          h('td', null, e.message, e.trigger === 'manual' ? h('span', { class: 'muted' }, ' (run by hand)') : null)))))
+        : h('p', { class: 'muted' }, 'Nothing has run yet.')));
+    }
+    timezone.textContent = o.enabled
+      ? `Times are container time: ${o.timezone}. Set TZ in the compose file to change it.` : '';
+    box.replaceChildren(...parts);
+  }
+
+  async function refresh(force) {
+    const o = await api('GET', '/api/schedules');
+    const next = JSON.stringify([o, id]);
+    if (force || next !== sig) { sig = next; draw(o); }
+  }
+
+  async function runNow(r) {
+    await perform(async () => {
+      const res = (await api('POST', `/api/schedules/${r.id}/run`, {})).result;
+      flash(res.message, res.status === 'error');
+    });
+  }
+
+  function setEnabled(r, enabled) {
+    perform(() => api('POST', `/api/schedules/${r.id}/enabled`, { enabled }), enabled ? 'Resumed' : 'Paused');
+  }
+
+  async function remove(r) {
+    const ok = await ask({
+      title: 'Delete schedule?',
+      message: `${r.type === 'snapshot' ? 'Snapshot of ' + r.source : 'Scrub'} (${whenText(r)}). ` +
+        'Snapshots it already made are kept.',
+      submit: 'Delete', danger: true,
+    });
+    if (ok) perform(() => api('POST', `/api/schedules/${r.id}/delete`, {}), 'Schedule deleted');
+  }
+
+  async function createDialog() {
+    const subs = (await api('GET', `/api/fs/${id}/subvolumes`)).subvolumes
+      .filter((s) => s.abs && !SNAPPER_PATH.test(s.path));
+    const snap = { name: 'type', is: ['snapshot'] };
+    const r = await ask({
+      title: 'New schedule',
+      fields: [
+        { name: 'type', label: 'What to run', type: 'select', value: 'snapshot',
+          options: [['snapshot', 'Snapshot with automatic cleanup'], ['scrub', 'Scrub']] },
+        { name: 'source', label: 'Subvolume', type: 'select', showIf: snap,
+          options: subs.map((s) => [s.path, s.path]) },
+        { name: 'dest', label: 'Save snapshots in', required: true, placeholder: 'snaps', showIf: snap,
+          hint: 'A folder that already exists, relative to the filesystem top level.' },
+        { name: 'prefix', label: 'Name prefix', placeholder: 'defaults to the subvolume name', showIf: snap,
+          hint: 'Snapshots are named prefix-YYYY-MM-DD_HHMM. Only snapshots with this name pattern are ever cleaned up.' },
+        { name: 'keep', label: 'Keep the newest', type: 'number', value: 7, required: true, showIf: snap,
+          hint: 'Older snapshots made by this schedule are deleted after each run.' },
+        { name: 'frequency', label: 'How often', type: 'select', value: 'daily',
+          options: [['hourly', 'Hourly'], ['daily', 'Daily'], ['weekly', 'Weekly'], ['monthly', 'Monthly']] },
+        { name: 'minute', label: 'Minute past the hour', type: 'number', value: 0, required: true,
+          showIf: { name: 'frequency', is: ['hourly'] } },
+        { name: 'weekday', label: 'Day of the week', type: 'select', value: '6',
+          options: WEEKDAYS.map((d, i) => [String(i), d]), showIf: { name: 'frequency', is: ['weekly'] } },
+        { name: 'monthday', label: 'Day of the month', type: 'number', value: 1, required: true,
+          hint: '1 to 28.', showIf: { name: 'frequency', is: ['monthly'] } },
+        { name: 'time', label: 'At', type: 'time', value: '03:00', required: true,
+          showIf: { name: 'frequency', is: ['daily', 'weekly', 'monthly'] } },
+      ],
+      submit: 'Create schedule',
+    });
+    if (r) perform(() => api('POST', '/api/schedules', { ...r, fs: id }), 'Schedule created');
+  }
+
+  const newBtn = h('button', { class: 'primary', onclick: createDialog }, 'New schedule');
+  const timezone = h('span', { class: 'muted' });
+  append(root, h('div', { class: 'toolbar' }, timezone, h('span', { class: 'spacer' }), newBtn), box);
+  await refresh(true);
+  state.timer = setInterval(() => refresh().catch(() => {}), 15000);
+}
+
 /* Maintenance */
 
 async function viewMaintenance(root) {
@@ -671,7 +831,10 @@ async function viewMaintenance(root) {
 
 /* ---------- shell ---------- */
 
-const VIEWS = { overview: viewOverview, subvolumes: viewSubvolumes, snapper: viewSnapper, maintenance: viewMaintenance };
+const VIEWS = {
+  overview: viewOverview, subvolumes: viewSubvolumes, snapper: viewSnapper,
+  schedules: viewSchedules, maintenance: viewMaintenance,
+};
 
 async function render() {
   clearInterval(state.timer);
