@@ -339,3 +339,39 @@ def test_session_reports_tool_version_only_when_signed_in(runner, pool):
     c.post("/api/login", json={"password": "s3cret"}, headers=H)
     d = c.get("/api/session").get_json()
     assert d["btrfsProgs"] == "6.6.3" and d["version"]
+
+
+# ---- the Snapper tab is only offered when /etc/snapper is mounted ---------------------
+
+def _with_mount(pool, tmp_path, extra_line):
+    info = tmp_path / "mountinfo-snapper"
+    info.write_text(open(pool[1]).read() + extra_line)
+    return str(info)
+
+
+def test_snapper_tab_is_hidden_without_the_mount(runner, pool):
+    assert make_client(pool).get("/api/session").get_json()["snapper"] is False
+
+
+def test_snapper_tab_is_shown_when_etc_snapper_is_mounted(runner, pool, tmp_path):
+    line = "61 27 8:1 /etc/snapper /etc/snapper ro - ext4 /dev/sda1 rw\n"
+    c = make_client(pool, BTRFS_UI_MOUNTINFO=_with_mount(pool, tmp_path, line))
+    assert c.get("/api/session").get_json()["snapper"] is True
+
+
+def test_snapper_tab_ignores_look_alike_mounts(runner, pool, tmp_path):
+    line = ("61 27 8:1 /x /etc/snapper-old ro - ext4 /dev/sda1 rw\n"
+            "62 27 8:1 /y /srv/etc/snapper ro - ext4 /dev/sda1 rw\n")
+    c = make_client(pool, BTRFS_UI_MOUNTINFO=_with_mount(pool, tmp_path, line))
+    assert c.get("/api/session").get_json()["snapper"] is False
+
+
+def test_snapper_tab_is_shown_with_a_snapper_root(runner, pool):
+    assert make_client(pool, BTRFS_UI_SNAPPER_ROOT="/host").get("/api/session").get_json()["snapper"] is True
+
+
+def test_snapper_tab_is_hidden_when_snapper_is_not_installed(runner, pool, tmp_path, monkeypatch):
+    monkeypatch.setattr(snapper_mod.Snapper, "available", property(lambda self: False))
+    line = "61 27 8:1 /etc/snapper /etc/snapper ro - ext4 /dev/sda1 rw\n"
+    c = make_client(pool, BTRFS_UI_MOUNTINFO=_with_mount(pool, tmp_path, line))
+    assert c.get("/api/session").get_json()["snapper"] is False

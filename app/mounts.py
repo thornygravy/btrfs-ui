@@ -40,6 +40,22 @@ def _unescape(s):
     return re.sub(r"\\([0-7]{3})", lambda m: chr(int(m.group(1), 8)), s)
 
 
+def is_mounted(path, mountinfo="/proc/self/mountinfo"):
+    """True if anything, of any filesystem type, is mounted at `path` or below it."""
+    path = path.rstrip("/")
+    try:
+        with open(mountinfo, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                fields = line.split(" ")
+                if len(fields) > 4:
+                    point = _unescape(fields[4])
+                    if point == path or point.startswith(path + "/"):
+                        return True
+    except OSError:
+        pass
+    return False
+
+
 def read_btrfs_mounts(path="/proc/self/mountinfo"):
     mounts = {}
     with open(path, encoding="utf-8", errors="replace") as fh:

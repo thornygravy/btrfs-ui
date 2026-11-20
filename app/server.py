@@ -146,7 +146,7 @@ def create_app(cfg=None):
             authRequired=cfg.auth_enabled,
             authenticated=authenticated,
             readonly=cfg.readonly,
-            snapper=snap.available,
+            snapper=snap.shown,
             version=VERSION,
             # tool versions are only for signed-in users
             btrfsProgs=progs_version() if authenticated else None,

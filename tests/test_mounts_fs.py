@@ -71,3 +71,19 @@ def test_resolve_rejects_escapes(tmp_path):
         fs.resolve("link/new", must_exist=False)
     with pytest.raises(ApiError):
         fs.resolve("missing")
+
+
+def test_is_mounted(tmp_path):
+    from app.mounts import is_mounted
+    info = tmp_path / "mountinfo"
+    info.write_text(
+        "1 0 8:1 / / rw - ext4 /dev/sda1 rw\n"
+        "2 1 8:1 /s /etc/snapper ro - ext4 /dev/sda1 rw\n"
+        "3 1 8:1 /c /etc/cfg\\040dir/inner rw - ext4 /dev/sda1 rw\n"
+        "4 1 8:1 /o /etc/snapper-old rw - ext4 /dev/sda1 rw\n")
+    assert is_mounted("/etc/snapper", str(info))
+    assert is_mounted("/etc/snapper/", str(info))
+    assert is_mounted("/etc/cfg dir", str(info))           # something mounted below it counts
+    assert not is_mounted("/etc/snapper-new", str(info))
+    assert not is_mounted("/etc/snap", str(info))           # a prefix of a name is not a parent directory
+    assert not is_mounted("/etc/snapper", str(tmp_path / "missing"))

@@ -176,6 +176,9 @@ const TABS = [
   ['maintenance', 'Maintenance'],
 ];
 
+// The Snapper tab only appears when /etc/snapper is mounted into the container.
+const visibleTabs = () => TABS.filter(([id]) => id !== 'snapper' || state.session.snapper);
+
 function panel(...kids) {
   return h('section', { class: 'panel' }, ...kids);
 }
@@ -854,7 +857,7 @@ async function render() {
 
 function route() {
   const t = location.hash.slice(1);
-  state.tab = VIEWS[t] ? t : 'overview';
+  state.tab = visibleTabs().some(([id]) => id === t) ? t : 'overview';
   render();
 }
 
@@ -874,7 +877,7 @@ async function startApp() {
   if (state.session.btrfsProgs) parts.push('btrfs-progs ' + state.session.btrfsProgs);
   $('#footer').textContent = parts.join(' · ');
 
-  $('#tabs').replaceChildren(...TABS.map(([id, label]) =>
+  $('#tabs').replaceChildren(...visibleTabs().map(([id, label]) =>
     h('a', { href: '#' + id, 'data-tab': id }, label)));
 
   state.filesystems = await api('GET', '/api/filesystems');

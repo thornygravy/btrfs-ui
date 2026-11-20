@@ -5,7 +5,9 @@ import io
 import re
 import shutil
 
-from . import proc
+from . import mounts, proc
+
+CONFIG_DIR = "/etc/snapper"
 
 NAME_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 SNAP_COLUMNS = ("number,default,active,date,user,cleanup,description,"
@@ -66,10 +68,18 @@ def parse_status(text, limit=2000):
 class Snapper:
     def __init__(self, cfg):
         self.root = cfg.snapper_root
+        self.mountinfo = cfg.mountinfo
 
     @property
     def available(self):
         return shutil.which("snapper") is not None
+
+    @property
+    def shown(self):
+        """Whether the UI offers the Snapper tab: snapper is installed and the host's
+        /etc/snapper was mounted into the container (or a --root was configured)."""
+        return self.available and (
+            self.root is not None or mounts.is_mounted(CONFIG_DIR, self.mountinfo))
 
     def _base(self, config=None, csv_out=False):
         a = ["snapper", "--no-dbus"]
