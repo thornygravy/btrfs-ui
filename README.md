@@ -140,10 +140,12 @@ volumes:
 The Schedules tab runs two kinds of job on a schedule (hourly, daily, weekly or
 monthly): a snapshot of a subvolume, or a scrub.
 
-<a href="docs/screenshots/schedules-light.png"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/schedules-dark.png">
-  <img src="docs/screenshots/schedules-light.png" alt="Schedules tab" width="600">
-</picture></a>
+<p>
+  <a href="docs/screenshots/schedules-light.png"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/schedules-dark.png">
+    <img src="docs/screenshots/schedules-light.png" alt="Schedules tab" width="600">
+  </picture></a>
+</p>
 
 Snapshots are read-only and are named `prefix-YYYY-MM-DD_HHMM` in a folder you pick.
 After each new snapshot, the ones beyond the number you chose to keep are deleted. Only
