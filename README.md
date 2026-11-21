@@ -39,7 +39,7 @@
     </td>
   </tr>
 </table>
-This app bridges the gap between running a whole desktop gui and only using cli commands. It's about time btrfs had a dedicated lightweight container to manage your headless servers from a browser.
+This app bridges the gap between running a whole desktop gui and only using cli commands. It's about time btrfs had a dedicated lightweight container to manage your headless servers from a browser. <br><br>
 
 Obviously we're in the super early stages of this project and using Claude to help, but we're welcome to any help we can get! If you have any ideas, please feel free to contribute.
 <br><br>
