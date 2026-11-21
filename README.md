@@ -39,8 +39,7 @@
     </td>
   </tr>
 </table>
-This app bridges the gap between running a whole desktop gui and only using cli commands. It's about time btrfs had a dedicated lightweight container to manage your headless servers from a browser.
-
+This app bridges the gap between running a whole desktop gui and only using cli commands. It's about time btrfs had a dedicated lightweight container to manage your headless servers from a browser.<br>
 
 This build contains a Flask backend that runs `btrfs` and `snapper`, with some plain HTML, CSS and a JS front end. 
 
