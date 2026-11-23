@@ -740,7 +740,7 @@ async function viewMaintenance(root) {
   balCancel.onclick = () => perform(() => api('POST', `/api/fs/${id}/balance`, { action: 'cancel' }), 'Cancel requested');
 
   // defrag
-  const defragPath = h('input', { type: 'text', class: 'grow', placeholder: '@data/photos', size: 28 });
+  const defragPath = h('input', { type: 'text', placeholder: '@data/photos', size: 28 });
   const defragComp = h('select', null, [['', 'No recompression'], ['zstd', 'zstd'], ['zlib', 'zlib'], ['lzo', 'lzo']]
     .map(([v, l]) => h('option', { value: v }, l)));
   const defragSize = h('input', { type: 'text', placeholder: '32M', size: 6 });
@@ -777,7 +777,8 @@ async function viewMaintenance(root) {
         h('label', { class: 'check' }, 'Metadata chunks under', mUsage, '% full')),
       h('div', { class: 'row' }, balStart, balCancel)),
     section('Defragment',
-      h('div', { class: 'row first' }, defragPath, defragComp,
+      h('div', { class: 'row first' },
+        h('label', { class: 'check grow' }, 'Folder', defragPath), defragComp,
         h('label', { class: 'check' }, 'Target extent size', defragSize), defragBtn)),
     section('Trim',
       h('p', null, 'Discard unused blocks on SSDs.'), h('div', { class: 'row' }, trimBtn)),
