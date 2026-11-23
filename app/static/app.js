@@ -26,16 +26,75 @@ function append(parent, ...kids) {
   parent.append(...kids.flat(Infinity).filter((k) => k != null && k !== false));
 }
 
+// Settings live in this browser only (localStorage).
+const SETTING_DEFAULTS = { theme: 'auto', size: 'normal', units: 'binary', clock: '24', tab: 'overview' };
+const SETTING_VALUES = {
+  theme: ['auto', 'light', 'dark'],
+  size: ['small', 'normal', 'large'],
+  units: ['binary', 'decimal'],
+  clock: ['24', '12', 'auto'],
+  tab: ['overview', 'subvolumes', 'snapper', 'schedules', 'maintenance'],
+};
+
+function loadSettings() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem('settings')); } catch (e) { /* unavailable or damaged: use defaults */ }
+  const out = { ...SETTING_DEFAULTS };
+  for (const [key, allowed] of Object.entries(SETTING_VALUES)) {
+    if (saved && allowed.includes(saved[key])) out[key] = saved[key];
+  }
+  return out;
+}
+
+function storeSettings() {
+  try { localStorage.setItem('settings', JSON.stringify(state.settings)); } catch (e) { /* ignore */ }
+}
+
+// theme.js applies the same attributes before the page paints; this keeps them current.
+function applySettings() {
+  const root = document.documentElement;
+  if (state.settings.theme === 'auto') delete root.dataset.theme; else root.dataset.theme = state.settings.theme;
+  if (state.settings.size === 'normal') delete root.dataset.size; else root.dataset.size = state.settings.size;
+}
+
 function fmtBytes(n) {
   if (n == null) return '–';
-  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB'];
+  const decimal = state.settings.units === 'decimal';
+  const base = decimal ? 1000 : 1024;
+  const units = decimal ? ['B', 'kB', 'MB', 'GB', 'TB', 'PB'] : ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB'];
   let i = 0, v = n;
-  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  while (v >= base && i < units.length - 1) { v /= base; i++; }
   return (i === 0 ? v : v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2)) + ' ' + units[i];
 }
 
-function fmtTime(ts) {
-  return ts ? new Date(ts * 1000).toLocaleString() : '';
+function use12Hour() {
+  const choice = state.settings.clock;
+  if (choice !== 'auto') return choice === '12';
+  return !!new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hour12;
+}
+
+// hour 0-23, minute and optional second to '16:05' or '4:05 PM'
+function fmtClock(hour, minute, second) {
+  const pad = (n) => String(n).padStart(2, '0');
+  const rest = pad(minute) + (second == null ? '' : ':' + pad(second));
+  if (!use12Hour()) return `${pad(hour)}:${rest}`;
+  return `${hour % 12 || 12}:${rest} ${hour < 12 ? 'AM' : 'PM'}`;
+}
+
+// Times arrive as 'YYYY-MM-DD HH:MM' (seconds optional) in the server's time zone, the
+// same clock snapper and btrfs use. Anything that does not look like that is shown as it came.
+function fmtTime(text) {
+  const m = /^(\d{4}-\d\d-\d\d)[ T](\d\d):(\d\d)(?::(\d\d))?/.exec(text || '');
+  return m ? `${m[1]} ${fmtClock(Number(m[2]), Number(m[3]), m[4] == null ? null : Number(m[4]))}` : (text || '');
+}
+
+const DOCS = 'https://btrfs.readthedocs.io/en/latest/';
+
+function docsLink(page, text = 'Docs') {
+  return h('a', {
+    class: 'docs', href: DOCS + page, target: '_blank', rel: 'noopener noreferrer',
+    title: 'Open the btrfs documentation in a new tab',
+  }, text);
 }
 
 function bar(pct, extra) {
@@ -58,7 +117,7 @@ function stateKind(word) {
   return '';
 }
 
-const state = { session: null, filesystems: [], fsId: null, tab: 'overview', timer: null };
+const state = { session: null, filesystems: [], fsId: null, tab: 'overview', timer: null, settings: loadSettings() };
 
 async function api(method, url, body) {
   const opts = { method, credentials: 'same-origin', headers: { 'X-Requested-With': 'btrfs-ui' } };
@@ -174,6 +233,7 @@ const TABS = [
   ['snapper', 'Snapper'],
   ['schedules', 'Schedules'],
   ['maintenance', 'Maintenance'],
+  ['settings', 'Settings'],
 ];
 
 // The Snapper tab only appears when /etc/snapper is mounted into the container.
@@ -190,8 +250,8 @@ function section(title, ...kids) {
 const SCRUB_HINT = 'No scrub history found. If scrubs have run on the host, share its ' +
   '/var/lib/btrfs directory with this container (see the README).';
 
-function kv(pairs) {
-  return h('dl', { class: 'kv' },
+function kv(pairs, extra) {
+  return h('dl', { class: 'kv' + (extra ? ' ' + extra : '') },
     pairs.filter(Boolean).flatMap(([k, v]) => [h('dt', null, k), h('dd', null, v)]));
 }
 
@@ -304,7 +364,7 @@ async function viewSubvolumes(root) {
       h('td', { class: 'mono' }, s.path),
       h('td', null, s.id),
       h('td', null, s.snapshot ? 'snapshot' : 'subvolume',
-        s.created ? h('div', { class: 'muted' }, s.created) : null),
+        s.created ? h('div', { class: 'muted' }, fmtTime(s.created)) : null),
       h('td', { class: 'num' }, s.referenced != null
         ? h('span', null, fmtBytes(s.referenced), h('div', { class: 'muted' }, fmtBytes(s.exclusive) + ' excl.')) : ''),
       h('td', null, flags),
@@ -373,6 +433,7 @@ async function viewSubvolumes(root) {
       h('label', { class: 'check' }, hideSnapper, 'Hide snapper snapshots'),
       count,
       h('span', { class: 'spacer' }),
+      docsLink('Subvolumes.html', 'About subvolumes'),
       h('button', { class: 'primary', onclick: createDialog }, 'New subvolume')),
     d.top_level_mounted ? null : h('div', { class: 'panel warn' },
       'The filesystem top level (subvolid=5) is not mounted in this container, so some subvolumes are not reachable.'),
@@ -383,7 +444,7 @@ async function viewSubvolumes(root) {
           h('th', { class: 'num' }, d.quotas ? 'Size' : ''), h('th', null, ''), h('th', null, ''))),
         tbody),
       d.quotas ? null : h('p', { class: 'muted' },
-        'Sizes appear here when quotas are enabled (btrfs quota enable).')));
+        'Sizes appear here when quotas are enabled (btrfs quota enable). ', docsLink('Qgroups.html', 'About quotas'))));
   drawRows();
 }
 
@@ -449,7 +510,7 @@ async function viewSnapper(root) {
       return h('tr', null,
         h('td', null, box), h('td', null, s.number),
         h('td', null, s.type + (s.pre_number ? ` (of ${s.pre_number})` : '')),
-        h('td', null, s.date), h('td', null, s.user),
+        h('td', null, fmtTime(s.date)), h('td', null, s.user),
         h('td', { class: 'muted' }, s.cleanup),
         h('td', null, s.description, s.userdata ? h('div', { class: 'muted' }, s.userdata) : null));
     });
@@ -562,8 +623,9 @@ async function viewSnapper(root) {
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 function whenText(r) {
-  const at = r.time;
-  if (r.frequency === 'hourly') return `Every hour at :${at.slice(3)}`;
+  const [hour, minute] = r.time.split(':').map(Number);
+  const at = fmtClock(hour, minute);
+  if (r.frequency === 'hourly') return `Every hour at :${r.time.slice(3)}`;
   if (r.frequency === 'daily') return `Every day at ${at}`;
   if (r.frequency === 'weekly') return `Every ${WEEKDAYS[r.weekday]} at ${at}`;
   return `Monthly on day ${r.monthday} at ${at}`;
@@ -585,10 +647,10 @@ async function viewSchedules(root) {
         r.type === 'snapshot'
           ? h('div', { class: 'muted' }, `${r.dest}/${r.prefix}-…, keep ${r.keep}`) : null),
       h('td', null, whenText(r)),
-      h('td', { class: 'nowrap' }, r.enabled ? r.next_text : badge('paused', 'warn')),
+      h('td', { class: 'nowrap' }, r.enabled ? fmtTime(r.next_text) : badge('paused', 'warn')),
       h('td', { class: 'nowrap' },
         r.last_status ? badge(r.last_status, resultKind(r.last_status)) : h('span', { class: 'muted' }, 'not yet'),
-        r.last_text ? h('div', { class: 'muted' }, r.last_text) : null),
+        r.last_text ? h('div', { class: 'muted' }, fmtTime(r.last_text)) : null),
       h('td', { class: 'actions' },
         h('button', { class: 'link', disabled: ro, onclick: () => runNow(r) }, 'Run now'),
         h('button', { class: 'link', disabled: ro, onclick: () => setEnabled(r, !r.enabled) },
@@ -617,12 +679,12 @@ async function viewSchedules(root) {
     if (o.enabled) {
       parts.push(panel(mine.length
         ? h('table', null,
-          h('thead', null, h('tr', null, ['What', 'When', 'Next run', 'Last run', ''].map((t) => h('th', null, t)))),
+          h('thead', null, h('tr', null, ['Task', 'Frequency', 'Next run', 'Last run', ''].map((t) => h('th', null, t)))),
           h('tbody', null, mine.map(ruleRow)))
         : h('p', { class: 'muted' }, 'No schedules yet for this filesystem.')));
       parts.push(section('Recent runs', log.length
         ? h('table', null, h('tbody', null, log.map((e) => h('tr', null,
-          h('td', { class: 'nowrap' }, e.time_text),
+          h('td', { class: 'nowrap' }, fmtTime(e.time_text)),
           h('td', null, e.what),
           h('td', null, badge(e.status, resultKind(e.status))),
           h('td', null, e.message, e.trigger === 'manual' ? h('span', { class: 'muted' }, ' (run by hand)') : null)))))
@@ -766,21 +828,21 @@ async function viewMaintenance(root) {
   const jobsBox = h('div');
 
   append(root, 
-    section('Scrub',
+    section(['Scrub', docsLink('Scrub.html')],
       scrubStatus,
       h('div', { class: 'row' }, scrubStart, scrubResume, scrubCancel,
         h('label', { class: 'check' }, scrubRO, 'Check only, do not repair'))),
-    section('Balance',
+    section(['Balance', docsLink('Balance.html')],
       balStatus,
       h('div', { class: 'row' },
         h('label', { class: 'check' }, 'Data chunks under', dUsage, '% full'),
         h('label', { class: 'check' }, 'Metadata chunks under', mUsage, '% full')),
       h('div', { class: 'row' }, balStart, balCancel)),
-    section('Defragment',
+    section(['Defragment', docsLink('Defragmentation.html')],
       h('div', { class: 'row first' },
         h('label', { class: 'check grow' }, 'Folder', defragPath), defragComp,
         h('label', { class: 'check' }, 'Target extent size', defragSize), defragBtn)),
-    section('Trim',
+    section(['Trim', docsLink('Trim.html')],
       h('p', null, 'Discard unused blocks on SSDs.'), h('div', { class: 'row' }, trimBtn)),
     section('Jobs', jobsBox));
 
@@ -816,7 +878,7 @@ async function viewMaintenance(root) {
         h('pre', null, j.output.join('\n') || '(no output)'));
       if (open.has(j.id)) det.open = true;
       return h('tr', null,
-        h('td', null, j.title, h('div', { class: 'muted' }, fmtTime(j.started)), det),
+        h('td', null, j.title, h('div', { class: 'muted' }, fmtTime(j.started_text)), det),
         h('td', null, badge(j.state, stateKind(j.state))),
         h('td', { class: 'actions' }, j.state === 'running'
           ? h('button', { class: 'link', onclick: () => perform(() => api('POST', `/api/jobs/${j.id}/cancel`, {})) }, 'Cancel')
@@ -833,19 +895,76 @@ async function viewMaintenance(root) {
   state.timer = setInterval(() => refresh().catch(() => {}), 3000);
 }
 
+/* Settings */
+
+function viewSettings(root) {
+  const sess = state.session;
+  const preview = h('span', { class: 'mono' });
+  const showPreview = () => {
+    preview.textContent = `${fmtBytes(1.5 * 2 ** 40)}   ·   ${fmtTime('2026-11-23 16:05')}`;
+  };
+
+  function choice(label, key, options, hint) {
+    const sel = h('select', null, options.map(([v, l]) => h('option', { value: v, selected: v === state.settings[key] }, l)));
+    sel.addEventListener('change', () => {
+      state.settings[key] = sel.value;
+      storeSettings();
+      applySettings();
+      showPreview();
+    });
+    return [label, h('div', null, sel, hint ? h('p', { class: 'muted' }, hint) : null)];
+  }
+
+  const tabOptions = visibleTabs().filter(([id]) => id !== 'settings');
+  const display = kv([
+    choice('Theme', 'theme', [['auto', 'Automatic (follows your system)'], ['light', 'Light'], ['dark', 'Dark']]),
+    choice('Text size', 'size', [['small', 'Small'], ['normal', 'Normal'], ['large', 'Large']]),
+    choice('File sizes', 'units', [['binary', 'Binary (KiB, MiB, GiB, TiB)'], ['decimal', 'Decimal (kB, MB, GB, TB)']],
+      'Only changes how sizes are shown. Raw command output stays as btrfs prints it, and sizes you type, like 32M, are always binary.'),
+    choice('Time format', 'clock', [['24', '24-hour'], ['12', '12-hour'], ['auto', 'Your browser\'s setting']],
+      `Times are in the server's time zone, ${sess.timezone}, the same clock snapper and your schedules use. ` +
+      'Set TZ in the compose file to change it.'),
+    choice('Opens to', 'tab', tabOptions.map(([id, label]) => [id, label])),
+  ], 'form');
+  showPreview();
+
+  const reset = h('button', { onclick: () => {
+    state.settings = { ...SETTING_DEFAULTS };
+    storeSettings();
+    applySettings();
+    render();
+  } }, 'Reset to defaults');
+
+  append(root,
+    section('Display',
+      display,
+      h('div', { class: 'row' }, h('span', { class: 'muted' }, 'Preview'), preview),
+      h('div', { class: 'row' }, reset),
+      h('p', { class: 'muted' }, 'These settings are saved in this browser only.')),
+    section('About',
+      kv([
+        ['btrfs-ui', sess.version],
+        sess.btrfsProgs ? ['btrfs-progs', sess.btrfsProgs] : null,
+        ['Server time zone', sess.timezone],
+        ['Mode', sess.readonly ? 'Read-only (browse only)' : 'Read-write'],
+        ['Schedules', sess.schedules ? 'On' : 'Off (no data folder, see the Schedules tab)'],
+      ]),
+      h('p', null, docsLink('index.html', 'btrfs documentation'))));
+}
+
 /* ---------- shell ---------- */
 
 const VIEWS = {
   overview: viewOverview, subvolumes: viewSubvolumes, snapper: viewSnapper,
-  schedules: viewSchedules, maintenance: viewMaintenance,
+  schedules: viewSchedules, maintenance: viewMaintenance, settings: viewSettings,
 };
 
 async function render() {
   clearInterval(state.timer);
   const root = $('#view');
-  $('#fs').hidden = state.tab === 'snapper' || !state.filesystems.length;
+  const needsFs = !['snapper', 'settings'].includes(state.tab);
+  $('#fs').hidden = !needsFs || !state.filesystems.length;
   document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('active', a.dataset.tab === state.tab));
-  const needsFs = state.tab !== 'snapper';
   const holder = h('div');
   if (needsFs && !state.fsId) { root.replaceChildren(noFilesystems()); return; }
   try {
@@ -857,8 +976,9 @@ async function render() {
 }
 
 function route() {
+  const shown = visibleTabs().map(([id]) => id);
   const t = location.hash.slice(1);
-  state.tab = visibleTabs().some(([id]) => id === t) ? t : 'overview';
+  state.tab = shown.includes(t) ? t : shown.includes(state.settings.tab) ? state.settings.tab : 'overview';
   render();
 }
 

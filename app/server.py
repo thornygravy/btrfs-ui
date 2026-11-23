@@ -9,7 +9,7 @@ from functools import wraps
 
 from flask import Flask, jsonify, request, send_from_directory, session
 
-from . import btrfs, proc, snapper as snapper_mod
+from . import btrfs, clock, proc, snapper as snapper_mod
 from .config import Config
 from .fs import ApiError, Registry
 from .schedules import Scheduler
@@ -148,8 +148,10 @@ def create_app(cfg=None):
             readonly=cfg.readonly,
             snapper=snap.shown,
             version=VERSION,
-            # tool versions are only for signed-in users
+            # server details are only for signed-in users
             btrfsProgs=progs_version() if authenticated else None,
+            timezone=clock.zone() if authenticated else None,
+            schedules=app.scheduler.store.enabled if authenticated else None,
         )
 
     @app.post("/api/login")

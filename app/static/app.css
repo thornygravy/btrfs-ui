@@ -1,50 +1,35 @@
 :root {
   color-scheme: light dark;
   accent-color: var(--accent);
-  --bg: #f4f5f7;
-  --panel: #ffffff;
-  --fg: #1c2127;
-  --muted: #667085;
-  --line: #e4e7ec;
-  --soft: #f3f5f7;
-  --accent: #0f766e;
-  --accent-fg: #ffffff;
-  --accent-soft: #e4f3f0;
-  --danger: #c7332d;
+  --zoom: 1;
+  --bg: light-dark(#f4f5f7, #0e1113);
+  --panel: light-dark(#ffffff, #161a1d);
+  --fg: light-dark(#1c2127, #e8ecef);
+  --muted: light-dark(#667085, #8c98a3);
+  --line: light-dark(#e4e7ec, #272d32);
+  --soft: light-dark(#f3f5f7, #1d2226);
+  --accent: light-dark(#0f766e, #3cc4b3);
+  --accent-fg: light-dark(#ffffff, #04201c);
+  --accent-soft: light-dark(#e4f3f0, #14302c);
+  --danger: light-dark(#c7332d, #f0716b);
   --danger-btn: #c7332d;
-  --danger-soft: #fdecea;
-  --warn: #9a5b06;
-  --warn-soft: #fcf1de;
-  --ok: #15803d;
-  --ok-soft: #e5f5ea;
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --danger-soft: light-dark(#fdecea, #3a1b19);
+  --warn: light-dark(#9a5b06, #e2aa52);
+  --warn-soft: light-dark(#fcf1de, #362b15);
+  --ok: light-dark(#15803d, #52c47f);
+  --ok-soft: light-dark(#e5f5ea, #153322);
+  --shadow: 0 1px 2px light-dark(rgba(16, 24, 40, 0.06), transparent);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e1113;
-    --panel: #161a1d;
-    --fg: #e8ecef;
-    --muted: #8c98a3;
-    --line: #272d32;
-    --soft: #1d2226;
-    --accent: #3cc4b3;
-    --accent-fg: #04201c;
-    --accent-soft: #14302c;
-    --danger: #f0716b;
-    --danger-btn: #c7332d;
-    --danger-soft: #3a1b19;
-    --warn: #e2aa52;
-    --warn-soft: #362b15;
-    --ok: #52c47f;
-    --ok-soft: #153322;
-    --shadow: none;
-  }
-}
+/* Settings → Theme: with no choice made the browser's light/dark preference decides. */
+:root[data-theme=light] { color-scheme: light; }
+:root[data-theme=dark] { color-scheme: dark; }
+:root[data-size=small] { --zoom: 0.9; }
+:root[data-size=large] { --zoom: 1.15; }
 
 * { box-sizing: border-box; }
-html { font: 105%/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+html { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: calc(105% * var(--zoom)); line-height: 1.5; }
 /* Sized for desktop screens. Narrow screens (tablets, phones) fall back to the smaller base size. */
-@media (max-width: 900px) { html { font-size: 87.5%; } }
+@media (max-width: 900px) { html { font-size: calc(87.5% * var(--zoom)); } }
 body { margin: 0; background: var(--bg); color: var(--fg); }
 [hidden] { display: none !important; }
 
@@ -61,6 +46,8 @@ header .wrap { display: flex; align-items: center; gap: 0.8571rem; padding-top: 
 .login-brand .logo { height: 2.8571rem; }
 .brand .ui { color: var(--accent); }
 .spacer { flex: 1; }
+a.docs { font-size: 0.8929rem; font-weight: 400; }
+h2 a.docs { margin-left: 0.7143rem; }
 
 nav { background: var(--panel); border-bottom: 1px solid var(--line); }
 nav .wrap { display: flex; gap: 0.2857rem; padding-top: 0.2857rem; padding-bottom: 0.7143rem; }
@@ -92,6 +79,8 @@ a { color: var(--accent); }
   padding: 1.1429rem 1.2857rem; box-shadow: var(--shadow);
 }
 .panel > :last-child { margin-bottom: 0; }
+/* A wide table scrolls inside its panel instead of widening the page (larger text sizes). */
+.panel { overflow-x: auto; }
 
 button, input, select, textarea { font: inherit; color: var(--fg); }
 button {
@@ -130,6 +119,8 @@ th, td { text-align: left; padding: 0.5714rem 0.7143rem; border-bottom: 1px soli
 th { font-weight: 600; color: var(--muted); font-size: 0.8571rem; white-space: nowrap; }
 th.num, td.num { text-align: right; }
 td.actions { text-align: right; white-space: nowrap; }
+/* On narrow screens dates and row buttons may wrap so tables fit. */
+@media (max-width: 900px) { .nowrap, td.actions { white-space: normal; } }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover td { background: var(--soft); }
 .panel table th:first-child, .panel table td:first-child { padding-left: 0; }
@@ -138,6 +129,8 @@ tbody tr:hover td { background: var(--soft); }
 dl.kv { display: grid; grid-template-columns: 12.1429rem 1fr; gap: 0.4286rem 1rem; margin: 0; }
 dl.kv dt { color: var(--muted); }
 dl.kv dd { margin: 0; word-break: break-word; }
+/* In Settings the labels line up with the middle of each control. */
+dl.kv.form dt { padding-top: 0.3929rem; }
 
 .badge {
   display: inline-block; padding: 0 0.6429rem; margin-right: 0.2857rem; border-radius: 999px;

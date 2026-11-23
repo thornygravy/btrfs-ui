@@ -1,7 +1,7 @@
 """API behaviour with the command runner faked out."""
 import pytest
 
-from app import proc, snapper as snapper_mod
+from app import clock, proc, snapper as snapper_mod
 from app.config import Config
 from app.server import create_app
 from conftest import fixture
@@ -339,6 +339,23 @@ def test_session_reports_tool_version_only_when_signed_in(runner, pool):
     c.post("/api/login", json={"password": "s3cret"}, headers=H)
     d = c.get("/api/session").get_json()
     assert d["btrfsProgs"] == "6.6.3" and d["version"]
+
+
+def test_session_reports_server_details_only_when_signed_in(runner, pool):
+    c = make_client(pool, BTRFS_UI_AUTH="on", BTRFS_UI_PASSWORD="s3cret")
+    d = c.get("/api/session").get_json()
+    assert d["timezone"] is None and d["schedules"] is None
+    c.post("/api/login", json={"password": "s3cret"}, headers=H)
+    d = c.get("/api/session").get_json()
+    assert d["timezone"] == clock.zone()
+    assert d["schedules"] is False  # no data folder in the test setup
+
+
+def test_job_start_time_is_sent_as_container_clock_text(runner, pool):
+    job = proc.Job("t", "k", ["true"])
+    d = job.to_dict()
+    assert d["started_text"] == clock.wall(d["started"])
+    assert len(d["started_text"]) == len("2026-11-23 04:26")
 
 
 # ---- the Snapper tab is only offered when /etc/snapper is mounted ---------------------

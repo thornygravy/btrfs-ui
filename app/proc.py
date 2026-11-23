@@ -9,6 +9,8 @@ import threading
 import time
 from collections import deque
 
+from . import clock
+
 ENV = {**os.environ, "LC_ALL": "C", "LANG": "C"}
 
 
@@ -101,6 +103,7 @@ class Job:
             "state": self.state,
             "rc": self.rc,
             "started": self.started,
+            "started_text": clock.wall(self.started),
             "ended": self.ended,
             "command": " ".join(shlex.quote(a) for a in self.args),
             "output": lines if full else lines[-6:],

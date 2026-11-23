@@ -25,7 +25,7 @@ import threading
 import time
 from datetime import datetime, timedelta
 
-from . import btrfs, proc
+from . import btrfs, clock, proc
 from .fs import ApiError, clean_rel
 
 log = logging.getLogger("btrfs-ui")
@@ -86,7 +86,7 @@ def _epoch(dt):
 
 def _fmt(ts):
     """Container-local time, the same clock snapper and `btrfs scrub status` print."""
-    return time.strftime("%Y-%m-%d %H:%M", time.localtime(ts)) if ts else None
+    return clock.wall(ts)
 
 
 def is_due(rule, now):
@@ -450,6 +450,6 @@ class Scheduler:
             "enabled": self.store.enabled, "reason": self.store.reason,
             "missing": self.store.missing,
             "dataDir": self.cfg.data_dir, "readonly": self.cfg.readonly,
-            "timezone": time.strftime("%Z (UTC%z)"),
+            "timezone": clock.zone(),
             "rules": rules, "history": history,
         }
