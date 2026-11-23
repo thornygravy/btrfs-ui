@@ -764,6 +764,23 @@ async function viewSchedules(root) {
 
 /* Maintenance */
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const BINARY = { '': 1, Ki: 1024, Mi: 1024 ** 2, Gi: 1024 ** 3, Ti: 1024 ** 4, Pi: 1024 ** 5, Ei: 1024 ** 6 };
+
+// `btrfs scrub status` prints times like 'Sat Nov 14 11:34:19 2026' and sizes like
+// '80.72MiB' or '80.75MiB/s (some device limits set)'. Show those in the chosen
+// formats and leave any other line exactly as printed.
+function fmtScrubValue(text) {
+  const t = /^[A-Z][a-z]{2} ([A-Z][a-z]{2}) +(\d{1,2}) (\d\d:\d\d:\d\d) (\d{4})$/.exec(text);
+  if (t && MONTHS.includes(t[1])) {
+    const month = String(MONTHS.indexOf(t[1]) + 1).padStart(2, '0');
+    return fmtTime(`${t[4]}-${month}-${t[2].padStart(2, '0')} ${t[3]}`);
+  }
+  const n = /^(\d+(?:\.\d+)?)(Ki|Mi|Gi|Ti|Pi|Ei)?B(\/s)?(.*)$/.exec(text);
+  if (n) return fmtBytes(Number(n[1]) * BINARY[n[2] || '']) + (n[3] || '') + n[4];
+  return text;
+}
+
 async function viewMaintenance(root) {
   const id = state.fsId;
 
@@ -848,7 +865,7 @@ async function viewMaintenance(root) {
 
   function drawScrub(s) {
     // the status word is already shown as a badge, so drop it from the detail rows
-    const rows = s.pairs.filter(([k]) => k !== 'Status');
+    const rows = s.pairs.filter(([k]) => k !== 'Status').map(([k, v]) => [k, fmtScrubValue(v)]);
     scrubStatus.replaceChildren(...[
       h('p', null, badge(s.status, stateKind(s.status))),
       s.status === 'never run' ? h('p', { class: 'muted' }, SCRUB_HINT) : null,
