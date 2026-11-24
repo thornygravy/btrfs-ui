@@ -103,7 +103,7 @@ function infoLink(page, about) {
     class: 'info', href: DOCS + page, target: '_blank', rel: 'noopener noreferrer',
     title: `About ${about} (btrfs docs, opens in a new tab)`,
     'aria-label': `About ${about} in the btrfs documentation, opens in a new tab`,
-  }, 'i');
+  });
 }
 
 function bar(pct, extra) {
