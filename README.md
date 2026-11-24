@@ -88,7 +88,7 @@ adding or removing devices.
        volumes:
          - /mnt/btrfs-root:/mnt/btrfs-root     # top level (subvolid=5) to make subvolumes reachable
          - /var/lib/btrfs:/var/lib/btrfs     # scrub history
-         - /appdata/btrfs-ui/data:/data     # schedules and their history (optional)
+         - ./data:/data     # schedules and their history (optional)
          # - /etc/snapper:/etc/snapper     # only for the Snapper tab
          # - /mnt/btrfs-root/@data:/mnt/btrfs-root/@data     # each config directory
        restart: unless-stopped
