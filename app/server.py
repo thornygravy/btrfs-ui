@@ -17,7 +17,7 @@ from .schedules import Scheduler
 
 log = logging.getLogger("btrfs-ui")
 B = btrfs.BTRFS
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 SIGN_IN_HOURS = 12      # a normal sign-in, counted from the last request
 REMEMBER_DAYS = 30      # "Stay signed in", counted from the last request
