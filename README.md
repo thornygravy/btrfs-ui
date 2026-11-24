@@ -55,6 +55,8 @@ Obviously we're in the super early stages of this project and using Claude to he
   timeline/number retention settings, run cleanup.
 - **Schedules**: take snapshots on a schedule and keep only the newest few, or run a
   scrub on a schedule. Needs the `/data` volume, see below.
+- **Notifications**: optionally send a webhook message (for example to Home Assistant)
+  when a scrub finds errors or a scheduled snapshot or scrub fails. See below.
 - **Maintenance**: scrub (start, cancel, resume), balance with usage filters, defragment
   (with optional recompression), trim, and a list of background jobs with their output.
 
@@ -162,6 +164,44 @@ but never run.
 Scrubs started by cron or OMV still show up in the UI (it reads `/var/lib/btrfs`), but
 btrfs-ui does not manage those schedules. If something else already snapshots or scrubs
 on a schedule, use one or the other so you do not get doubles.
+
+### Notifications
+
+Set `BTRFS_UI_WEBHOOK_URL` and btrfs-ui sends a small JSON message to that address when a
+scrub finishes with errors, or when a scheduled snapshot or scrub fails. It looks at
+`btrfs scrub status` once a minute, so a scrub started by hand, by a schedule or by cron
+is covered. Add `BTRFS_UI_WEBHOOK_SCRUB_OK=1` to hear about clean scrubs too.
+**Settings → Notifications** has a button that sends a test message.
+
+```json
+{"event": "scrub_errors", "title": "Scrub found errors on tank", "message": "...", "filesystem": "tank"}
+```
+
+`event` is `scrub_errors`, `schedule_failed`, `scrub_ok` or `test`.
+
+For Home Assistant, create an automation with a webhook trigger and a notify action.
+The webhook ID is the only secret, so make it long and random:
+
+```yaml
+alias: btrfs-ui
+trigger:
+  - platform: webhook
+    webhook_id: btrfs-ui-change-this-to-something-long
+action:
+  - service: notify.mobile_app_your_phone
+    data:
+      title: "{{ trigger.json.title }}"
+      message: "{{ trigger.json.message }}"
+```
+
+Then set `BTRFS_UI_WEBHOOK_URL=http://192.168.1.10:8123/api/webhook/btrfs-ui-change-this-to-something-long`
+(your Home Assistant address). Use an IP address or a DNS name the container can
+resolve: `localhost` is the container itself, and `.local` names often do not work
+inside Docker. Newer Home Assistant versions write `trigger: webhook` instead of
+`platform: webhook`.
+
+Only the host is ever shown in the UI, and the address is never written to the logs. A
+scrub that finishes while the container is down is not reported.
 <br>
 
 ## Configuration
@@ -179,6 +219,8 @@ All through environment variables.
 | `BTRFS_UI_HOST` / `BTRFS_UI_PORT` | `0.0.0.0` / `8008` | Listen address inside the container. |
 | `BTRFS_UI_SNAPPER_ROOT` | – | Experimental, see above. |
 | `BTRFS_UI_DATA_DIR` | `/data` | Where schedules are saved. |
+| `BTRFS_UI_WEBHOOK_URL` | – | Where to send a JSON message when a scrub finds errors or a schedule fails, for example a Home Assistant webhook. |
+| `BTRFS_UI_WEBHOOK_SCRUB_OK` | off | `1` = also send a message when a scrub finishes with no errors. |
 | `TZ` | `UTC` | Container time zone. Schedule times, and the times snapper and scrub show, follow it. |
 <br>
 
@@ -224,6 +266,9 @@ line with `build: .`. Start it with `docker compose up -d --build`.
   directories both have to be mounted at the same paths as on the host.
 - **Schedules tab says schedules are off**: mount a folder at `/data` (`- ./data:/data`
   in the compose file) and restart the container.
+- **The test message fails**: the message in the UI says why. "HTTP 404" usually means
+  the webhook ID does not match the automation, and "Could not reach" means the address
+  is wrong or not reachable from inside the container.
   <br><br>
   
 
