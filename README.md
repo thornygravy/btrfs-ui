@@ -105,7 +105,7 @@ Change the password (the container refuses to start otherwise), then open `http:
 | Bind mounts of your btrfs mount points | The container only sees what you mount into it. Use the **same path as on the host**. |
 | `/var/lib/btrfs` from the host | btrfs stores scrub history there. Without it the UI cannot see past scrubs and says "never run". |
 | `/etc/snapper` (optional) | Only for the Snapper tab. |
-| `/data` (optional) | Only for the Schedules tab. Keeps your schedules and what they have run. |
+| `/data` (optional) | For the Schedules tab, which keeps your schedules and what they have run. It also keeps you logged in across restarts. |
 
 No `/dev` access is needed. It runs as root inside the container, which btrfs requires.
 
@@ -217,10 +217,10 @@ All through environment variables.
 | `BTRFS_UI_AUTH` | `on` | `off` disables the login (only if something in front already authenticates). |
 | `BTRFS_UI_READONLY` | off | `1` = view everything, change nothing. |
 | `BTRFS_UI_COOKIE_SECURE` | off | `1` when served over HTTPS. |
-| `BTRFS_UI_SECRET` | random | Session signing key. Set it if you want logins to survive restarts. |
+| `BTRFS_UI_SECRET` | kept in `/data/secret` | Session signing key. If you leave it out, one is created and kept in `/data`, so logins survive restarts. Without a `/data` volume it is random on every start and a restart logs you out, so mount `/data` or set this. |
 | `BTRFS_UI_HOST` / `BTRFS_UI_PORT` | `0.0.0.0` / `8008` | Listen address inside the container. |
 | `BTRFS_UI_SNAPPER_ROOT` | – | Experimental, see above. |
-| `BTRFS_UI_DATA_DIR` | `/data` | Where schedules are saved. |
+| `BTRFS_UI_DATA_DIR` | `/data` | Where schedules and the session key are saved. |
 | `BTRFS_UI_WEBHOOK_URL` | – | Where to send a JSON message when a scrub finds errors or a schedule fails, for example a Home Assistant webhook. |
 | `BTRFS_UI_WEBHOOK_SCRUB_OK` | off | `1` = also send a message when a scrub finishes with no errors. |
 | `TZ` | `UTC` | Container time zone. Schedule times, and the times snapper and scrub show, follow it. |
@@ -239,6 +239,9 @@ it like root access to the storage.
   (Caddy, nginx, Traefik) and set `BTRFS_UI_COOKIE_SECURE=1`.
 - The session cookie is `HttpOnly` and `SameSite=Strict`, and every change needs a
   custom request header, which blocks cross-site requests.
+- You stay logged in for 12 hours after your last visit, or 30 days if you tick "keep me
+  logged in". Changing the password logs everyone out. Logging out only clears that
+  browser, so do not tick it on a computer you do not trust.
 - Every path you type is resolved and must end up inside a mounted btrfs filesystem
   (`..` and symlinks that leave it are rejected). Commands are run without a shell.
 - Deleting is refused for the top-level subvolume, the default subvolume and anything
