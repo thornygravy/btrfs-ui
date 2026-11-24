@@ -90,11 +90,20 @@ function fmtTime(text) {
 
 const DOCS = 'https://btrfs.readthedocs.io/en/latest/';
 
-function docsLink(page, text = 'Docs') {
+function docsLink(page, text) {
   return h('a', {
     class: 'docs', href: DOCS + page, target: '_blank', rel: 'noopener noreferrer',
     title: 'Open the btrfs documentation in a new tab',
   }, text);
+}
+
+// The little (i) beside a heading. `about` says what the page is about, for the tooltip.
+function infoLink(page, about) {
+  return h('a', {
+    class: 'info', href: DOCS + page, target: '_blank', rel: 'noopener noreferrer',
+    title: `About ${about} (btrfs docs, opens in a new tab)`,
+    'aria-label': `About ${about} in the btrfs documentation, opens in a new tab`,
+  }, 'i');
 }
 
 function bar(pct, extra) {
@@ -433,7 +442,7 @@ async function viewSubvolumes(root) {
       h('label', { class: 'check' }, hideSnapper, 'Hide snapper snapshots'),
       count,
       h('span', { class: 'spacer' }),
-      docsLink('Subvolumes.html', 'About subvolumes'),
+      infoLink('Subvolumes.html', 'subvolumes'),
       h('button', { class: 'primary', onclick: createDialog }, 'New subvolume')),
     d.top_level_mounted ? null : h('div', { class: 'panel warn' },
       'The filesystem top level (subvolid=5) is not mounted in this container, so some subvolumes are not reachable.'),
@@ -444,7 +453,7 @@ async function viewSubvolumes(root) {
           h('th', { class: 'num' }, d.quotas ? 'Size' : ''), h('th', null, ''), h('th', null, ''))),
         tbody),
       d.quotas ? null : h('p', { class: 'muted' },
-        'Sizes appear here when quotas are enabled (btrfs quota enable). ', docsLink('Qgroups.html', 'About quotas'))));
+        'Sizes appear here when quotas are enabled (btrfs quota enable). ', infoLink('Qgroups.html', 'quotas'))));
   drawRows();
 }
 
@@ -845,21 +854,21 @@ async function viewMaintenance(root) {
   const jobsBox = h('div');
 
   append(root, 
-    section(['Scrub', docsLink('Scrub.html')],
+    section(['Scrub', infoLink('Scrub.html', 'scrub')],
       scrubStatus,
       h('div', { class: 'row' }, scrubStart, scrubResume, scrubCancel,
         h('label', { class: 'check' }, scrubRO, 'Check only, do not repair'))),
-    section(['Balance', docsLink('Balance.html')],
+    section(['Balance', infoLink('Balance.html', 'balance')],
       balStatus,
       h('div', { class: 'row' },
         h('label', { class: 'check' }, 'Data chunks under', dUsage, '% full'),
         h('label', { class: 'check' }, 'Metadata chunks under', mUsage, '% full')),
       h('div', { class: 'row' }, balStart, balCancel)),
-    section(['Defragment', docsLink('Defragmentation.html')],
+    section(['Defragment', infoLink('Defragmentation.html', 'defragmenting')],
       h('div', { class: 'row first' },
         h('label', { class: 'check grow' }, 'Folder', defragPath), defragComp,
         h('label', { class: 'check' }, 'Target extent size', defragSize), defragBtn)),
-    section(['Trim', docsLink('Trim.html')],
+    section(['Trim', infoLink('Trim.html', 'trim')],
       h('p', null, 'Discard unused blocks on SSDs.'), h('div', { class: 'row' }, trimBtn)),
     section('Jobs', jobsBox));
 

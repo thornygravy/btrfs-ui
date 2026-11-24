@@ -47,7 +47,15 @@ header .wrap { display: flex; align-items: center; gap: 0.8571rem; padding-top: 
 .brand .ui { color: var(--accent); }
 .spacer { flex: 1; }
 a.docs { font-size: 0.8929rem; font-weight: 400; }
-h2 a.docs { margin-left: 0.7143rem; }
+a.info {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 1.1429rem; height: 1.1429rem; border: 1.5px solid currentColor; border-radius: 50%;
+  color: var(--muted); font-size: 0.75rem; font-weight: 700; line-height: 1; text-decoration: none;
+  vertical-align: middle;
+}
+a.info::after { content: ""; position: absolute; inset: -0.4286rem; }
+a.info:hover { color: var(--accent); }
+h2 a.info { margin-left: 0.5714rem; }
 
 nav { background: var(--panel); border-bottom: 1px solid var(--line); }
 nav .wrap { display: flex; gap: 0.2857rem; padding-top: 0.2857rem; padding-bottom: 0.7143rem; }
