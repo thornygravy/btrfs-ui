@@ -83,10 +83,12 @@ adding or removing devices.
          - BTRFS_UI_PASSWORD=change-me
          # - BTRFS_UI_READONLY=1                # browse only, no changes
          # - BTRFS_UI_COOKIE_SECURE=1           # set when served over HTTPS
+         # - BTRFS_UI_WEBHOOK_URL=http://192.168.1.10:8123/api/webhook/your-long-id   # message when a scrub finds errors or a schedule fails
+         # - BTRFS_UI_WEBHOOK_SCRUB_OK=1        # also message when a scrub finishes clean
        volumes:
          - /mnt/btrfs-root:/mnt/btrfs-root     # top level (subvolid=5) to make subvolumes reachable
          - /var/lib/btrfs:/var/lib/btrfs     # scrub history
-         - ./data:/data     # schedules and their history (optional)
+         - /appdata/btrfs-ui/data:/data     # schedules and their history (optional)
          # - /etc/snapper:/etc/snapper     # only for the Snapper tab
          # - /mnt/btrfs-root/@data:/mnt/btrfs-root/@data     # each config directory
        restart: unless-stopped
