@@ -49,7 +49,7 @@ header .wrap { display: flex; align-items: center; gap: 0.8571rem; padding-top: 
 a.docs { font-size: 0.8929rem; font-weight: 400; }
 a.info {
   position: relative; display: inline-block; flex: none; width: 0.9286rem; height: 0.9286rem;
-  vertical-align: middle; color: var(--muted);
+  vertical-align: middle; color: var(--muted); margin-bottom: 2px;
 }
 a.info::before {
   content: ""; position: absolute; inset: 0; background: currentColor;
