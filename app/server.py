@@ -12,6 +12,7 @@ from flask import Flask, jsonify, request, send_from_directory, session
 from . import btrfs, clock, proc, snapper as snapper_mod
 from .config import Config
 from .fs import ApiError, Registry
+from .notify import Notifier, NotifyError
 from .schedules import Scheduler
 
 log = logging.getLogger("btrfs-ui")
@@ -152,6 +153,8 @@ def create_app(cfg=None):
             btrfsProgs=progs_version() if authenticated else None,
             timezone=clock.zone() if authenticated else None,
             schedules=app.scheduler.store.enabled if authenticated else None,
+            webhook=app.notifier.host if authenticated else None,
+            webhookScrubOk=app.notifier.scrub_ok if authenticated else None,
         )
 
     @app.post("/api/login")
@@ -498,7 +501,19 @@ def create_app(cfg=None):
 
     # ---- schedules ---------------------------------------------------------
 
-    app.scheduler = scheduler = Scheduler(cfg, registry, collect_subvols)
+    app.notifier = notifier = Notifier(cfg, registry)
+    app.scheduler = scheduler = Scheduler(cfg, registry, collect_subvols, notify=notifier.notify)
+
+    @app.post("/api/notify/test")
+    def notify_test():
+        if not notifier.enabled:
+            raise ApiError("Notifications are not set up. Set BTRFS_UI_WEBHOOK_URL.")
+        try:
+            notifier.send("test", "btrfs-ui test message",
+                          "If you can read this, notifications from btrfs-ui work.")
+        except NotifyError as e:
+            raise ApiError(str(e), 502)
+        return jsonify(ok=True)
 
     @app.get("/api/schedules")
     def schedules_list():

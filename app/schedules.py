@@ -239,10 +239,11 @@ class Store:
 # ---- the scheduler ---------------------------------------------------------
 
 class Scheduler:
-    def __init__(self, cfg, registry, collect_subvols):
+    def __init__(self, cfg, registry, collect_subvols, notify=None):
         self.cfg = cfg
         self.registry = registry
         self._collect = collect_subvols
+        self._notify = notify  # notify(event, title, message, filesystem), optional
         self.store = Store(cfg.data_dir)
         self._run_lock = threading.Lock()  # one rule runs at a time
         self._thread = None
@@ -287,6 +288,7 @@ class Scheduler:
     def _execute(self, rule, trigger, now_ts, slot_ts):
         with self._run_lock:
             now = datetime.fromtimestamp(now_ts)
+            f = None
             try:
                 try:
                     f = self.registry.get(rule["fs"])
@@ -312,6 +314,11 @@ class Scheduler:
                 self.store.history.append(entry)
                 self.store.save()
             log.info("schedule %s (%s): %s: %s", rule["id"], self.label(rule), status, message)
+            if trigger == "schedule" and status == "error" and self._notify:
+                name = f.label if f else None
+                self._notify("schedule_failed",
+                             f"{self.label(rule)} failed" + (f" on {name}" if name else ""),
+                             message, name)
             return entry
 
     def _run_snapshot(self, rule, f, now):

@@ -952,12 +952,34 @@ function viewSettings(root) {
     render();
   } }, 'Reset to defaults');
 
+  const test = h('button', { onclick: async () => {
+    test.disabled = true;
+    try {
+      await api('POST', '/api/notify/test');
+      flash('Test message sent');
+    } catch (e) {
+      flash(e.message, true);
+    }
+    test.disabled = false;
+  } }, 'Send test message');
+
+  const notifications = sess.webhook
+    ? [
+      h('p', null,
+        `Messages go to ${sess.webhook} when a scrub finds errors or a scheduled snapshot or scrub fails` +
+        (sess.webhookScrubOk ? ', and when a scrub finishes cleanly.' : '.')),
+      h('div', { class: 'row first' }, test),
+    ]
+    : [h('p', null, 'Not set up. Set ', h('span', { class: 'mono' }, 'BTRFS_UI_WEBHOOK_URL'),
+      ' in the compose file to get a message when a scrub finds errors or a schedule fails.')];
+
   append(root,
     section('Display',
       display,
       h('div', { class: 'row' }, h('span', { class: 'muted' }, 'Preview'), preview),
       h('div', { class: 'row' }, reset),
       h('p', { class: 'muted' }, 'These settings are saved in this browser only.')),
+    section('Notifications', ...notifications),
     section('About',
       kv([
         ['btrfs-ui', sess.version],

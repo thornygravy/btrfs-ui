@@ -17,6 +17,7 @@ def main():
         logging.info("Read-only mode: changes are disabled.")
     app = create_app(cfg)
     app.scheduler.start()
+    app.notifier.start()
     logging.info("Listening on http://%s:%s", cfg.host, cfg.port)
     serve(app, host=cfg.host, port=cfg.port, threads=8,
           ident="btrfs-ui", clear_untrusted_proxy_headers=True)

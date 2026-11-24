@@ -89,7 +89,7 @@ def test_scrub_rule_runs_a_real_scrub(sched):
     end = time.time() + 30
     while time.time() < end:
         s = c.get(f"/api/fs/{fs}/scrub").get_json()
-        if not s["running"]:
+        if s["status"] == "finished":  # not just "not running": the status can lag the start
             break
         time.sleep(0.3)
     assert s["status"] == "finished", s

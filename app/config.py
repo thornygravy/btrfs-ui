@@ -1,6 +1,7 @@
 """Runtime configuration, read from environment variables."""
 import os
 import secrets
+from urllib.parse import urlsplit
 
 
 PLACEHOLDER_PASSWORDS = {"change-me", "changeme", "password"}
@@ -44,10 +45,20 @@ class Config:
         # exists, i.e. until a volume is mounted there.
         self.data_dir = e.get("BTRFS_UI_DATA_DIR", "/data")
 
+        # Optional: an address that gets a JSON message when a scrub finds errors or a
+        # schedule fails (for example a Home Assistant webhook).
+        self.webhook_url = (e.get("BTRFS_UI_WEBHOOK_URL") or "").strip() or None
+        self.webhook_scrub_ok = _flag(e.get("BTRFS_UI_WEBHOOK_SCRUB_OK"))
+
         # Where to read the mount table from (only changed by the tests).
         self.mountinfo = e.get("BTRFS_UI_MOUNTINFO", "/proc/self/mountinfo")
 
     def validate(self):
+        if self.webhook_url:
+            u = urlsplit(self.webhook_url)
+            if u.scheme not in ("http", "https") or not u.hostname:
+                raise SystemExit("BTRFS_UI_WEBHOOK_URL must be a full address starting with "
+                                 "http:// or https://")
         if self.auth_enabled and self.password in PLACEHOLDER_PASSWORDS:
             raise SystemExit("BTRFS_UI_PASSWORD is still the example value. Pick your own.")
         if self.auth_enabled and not self.password:
