@@ -180,6 +180,7 @@ details[open] > summary { margin-bottom: 0.7143rem; }
   border: 1px solid var(--line); border-radius: 1rem; box-shadow: var(--shadow);
 }
 #login p { margin: 0; }
+#login .check { color: var(--muted); }
 
 dialog {
   border: 1px solid var(--line); border-radius: 1rem; background: var(--panel); color: var(--fg);

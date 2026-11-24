@@ -19,6 +19,9 @@ log = logging.getLogger("btrfs-ui")
 B = btrfs.BTRFS
 VERSION = "1.1.0"
 
+SIGN_IN_HOURS = 12      # a normal sign-in, counted from the last request
+REMEMBER_DAYS = 30      # "Stay signed in", counted from the last request
+
 
 def create_app(cfg=None):
     cfg = cfg or Config()
@@ -28,12 +31,25 @@ def create_app(cfg=None):
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Strict",
         SESSION_COOKIE_SECURE=cfg.cookie_secure,
-        PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
+        PERMANENT_SESSION_LIFETIME=timedelta(days=REMEMBER_DAYS),  # the outer limit
     )
     registry = Registry(cfg)
     jobs = proc.JobManager()
     snap = snapper_mod.Snapper(cfg)
     failures = {}  # client address -> recent failed login times
+    # Sessions carry a tag made from the password, so changing it signs everybody out.
+    pw_tag = hmac.new(cfg.secret.encode(), (cfg.password or "").encode(), "sha256").hexdigest()[:16]
+
+    def signed_in():
+        """True for a valid session. Each use moves its expiry forward."""
+        if not session.get("auth"):
+            return False
+        now = time.time()
+        if session.get("exp", 0) < now or session.get("pw") != pw_tag:
+            session.clear()
+            return False
+        session["exp"] = now + session.get("ttl", SIGN_IN_HOURS * 3600)
+        return True
 
     # ---- plumbing ----------------------------------------------------------
 
@@ -65,7 +81,7 @@ def create_app(cfg=None):
             if request.headers.get("X-Requested-With") != "btrfs-ui":
                 raise ApiError("Missing X-Requested-With header", 400)
         if path.startswith("/api/") and path not in OPEN:
-            if cfg.auth_enabled and not session.get("auth"):
+            if cfg.auth_enabled and not signed_in():
                 raise ApiError("Sign in required", 401)
 
     @app.after_request
@@ -142,7 +158,7 @@ def create_app(cfg=None):
 
     @app.get("/api/session")
     def get_session():
-        authenticated = (not cfg.auth_enabled) or bool(session.get("auth"))
+        authenticated = (not cfg.auth_enabled) or signed_in()
         return jsonify(
             authRequired=cfg.auth_enabled,
             authenticated=authenticated,
@@ -170,6 +186,9 @@ def create_app(cfg=None):
             session.clear()
             session.permanent = True
             session["auth"] = True
+            session["pw"] = pw_tag
+            session["ttl"] = (REMEMBER_DAYS * 24 if body().get("remember") is True else SIGN_IN_HOURS) * 3600
+            session["exp"] = now + session["ttl"]
             failures.pop(who, None)
             return jsonify(ok=True)
         failures[who] = recent + [now]

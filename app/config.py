@@ -7,6 +7,35 @@ from urllib.parse import urlsplit
 PLACEHOLDER_PASSWORDS = {"change-me", "changeme", "password"}
 
 
+def _kept_secret(data_dir):
+    """A random key saved as <data_dir>/secret (readable only by us). Nothing is created
+    when the folder is not there, so a missing /data volume still means "schedules off"."""
+    path = os.path.join(data_dir, "secret")
+
+    def read():
+        try:
+            with open(path, encoding="ascii") as fh:
+                value = fh.read().strip()
+            return value if len(value) >= 32 else None
+        except (OSError, UnicodeError):
+            return None
+
+    value = read()
+    if value:
+        return value
+    value = secrets.token_hex(32)
+    if os.path.isdir(data_dir):
+        try:
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, "w", encoding="ascii") as fh:
+                fh.write(value + "\n")
+        except FileExistsError:
+            return read() or value
+        except OSError:
+            pass  # read-only or full: this run just uses a random key
+    return value
+
+
 def _flag(value, default=False):
     if value is None:
         return default
@@ -30,9 +59,6 @@ class Config:
                 password = fh.read().strip()
         self.password = password or None
 
-        # Signing key for the session cookie. Random per start unless provided,
-        # which just means a restart signs everybody out.
-        self.secret = e.get("BTRFS_UI_SECRET") or secrets.token_hex(32)
         self.cookie_secure = _flag(e.get("BTRFS_UI_COOKIE_SECURE"))
 
         # View everything, change nothing.
@@ -44,6 +70,10 @@ class Config:
         # Where schedules are stored. Scheduling stays off until this directory
         # exists, i.e. until a volume is mounted there.
         self.data_dir = e.get("BTRFS_UI_DATA_DIR", "/data")
+
+        # Signing key for the session cookie: the one provided, else one kept in the
+        # data folder so logins survive a restart, else a random one for this run.
+        self.secret = e.get("BTRFS_UI_SECRET") or _kept_secret(self.data_dir)
 
         # Optional: an address that gets a JSON message when a scrub finds errors or a
         # schedule fails (for example a Home Assistant webhook).

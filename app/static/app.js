@@ -1062,7 +1062,7 @@ $('#login-form').addEventListener('submit', async (e) => {
   const err = $('#login-error');
   err.hidden = true;
   try {
-    await api('POST', '/api/login', { password: $('#password').value });
+    await api('POST', '/api/login', { password: $('#password').value, remember: $('#remember').checked });
     $('#password').value = '';
     await boot();
   } catch (ex) {
