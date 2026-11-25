@@ -642,6 +642,20 @@ function whenText(r) {
   return `Monthly on day ${r.monthday} at ${at}`;
 }
 
+function ruleName(r) {
+  return r.type === 'snapshot' ? 'Snapshot of ' + r.source : { scrub: 'Scrub', balance: 'Balance', trim: 'Trim' }[r.type];
+}
+
+// The grey line under a task's name.
+function ruleDetail(r) {
+  if (r.type === 'snapshot') return `${r.dest}/${r.prefix}-…, keep ${r.keep}`;
+  if (r.type !== 'balance') return null;
+  const parts = [];
+  if (r.data_usage != null) parts.push(`data chunks under ${r.data_usage}% full`);
+  if (r.metadata_usage != null) parts.push(`metadata chunks under ${r.metadata_usage}% full`);
+  return parts.join(', ');
+}
+
 function resultKind(status) {
   return { ok: 'ok', error: 'err', skipped: 'warn' }[status] || '';
 }
@@ -654,9 +668,8 @@ async function viewSchedules(root) {
   function ruleRow(r) {
     return h('tr', null,
       h('td', { class: 'title' },
-        r.type === 'snapshot' ? h('span', null, 'Snapshot of ', h('span', { class: 'mono' }, r.source)) : 'Scrub',
-        r.type === 'snapshot'
-          ? h('div', { class: 'muted' }, `${r.dest}/${r.prefix}-…, keep ${r.keep}`) : null),
+        r.type === 'snapshot' ? h('span', null, 'Snapshot of ', h('span', { class: 'mono' }, r.source)) : ruleName(r),
+        ruleDetail(r) ? h('div', { class: 'muted' }, ruleDetail(r)) : null),
       h('td', { 'data-label': 'Frequency' }, whenText(r)),
       h('td', { class: 'nowrap', 'data-label': 'Next run' }, r.enabled ? fmtTime(r.next_text) : badge('paused', 'warn')),
       h('td', { class: 'nowrap', 'data-label': 'Last run' },
@@ -724,7 +737,7 @@ async function viewSchedules(root) {
   async function remove(r) {
     const ok = await ask({
       title: 'Delete schedule?',
-      message: `${r.type === 'snapshot' ? 'Snapshot of ' + r.source : 'Scrub'} (${whenText(r)}). ` +
+      message: `${ruleName(r)} (${whenText(r)}). ` +
         'Snapshots it already made are kept.',
       submit: 'Delete', danger: true,
     });
@@ -735,11 +748,13 @@ async function viewSchedules(root) {
     const subs = (await api('GET', `/api/fs/${id}/subvolumes`)).subvolumes
       .filter((s) => s.abs && !SNAPPER_PATH.test(s.path));
     const snap = { name: 'type', is: ['snapshot'] };
+    const bal = { name: 'type', is: ['balance'] };
     const r = await ask({
       title: 'New schedule',
       fields: [
         { name: 'type', label: 'What to run', type: 'select', value: 'snapshot',
-          options: [['snapshot', 'Snapshot with automatic cleanup'], ['scrub', 'Scrub']] },
+          options: [['snapshot', 'Snapshot with automatic cleanup'], ['scrub', 'Scrub'],
+            ['balance', 'Balance'], ['trim', 'Trim (SSDs)']] },
         { name: 'source', label: 'Subvolume', type: 'select', showIf: snap,
           options: subs.map((s) => [s.path, s.path]) },
         { name: 'dest', label: 'Save snapshots in', required: true, placeholder: 'snaps', showIf: snap,
@@ -748,6 +763,10 @@ async function viewSchedules(root) {
           hint: 'Snapshots are named prefix-YYYY-MM-DD_HHMM. Only snapshots with this name pattern are ever cleaned up.' },
         { name: 'keep', label: 'Keep the newest', type: 'number', value: 7, required: true, showIf: snap,
           hint: 'Older snapshots made by this schedule are deleted after each run.' },
+        { name: 'data_usage', label: 'Data chunks under (% full)', type: 'number', value: 10, showIf: bal,
+          hint: 'Only chunks less full than this are rewritten, so it stays gentle. Leave it empty to skip data.' },
+        { name: 'metadata_usage', label: 'Metadata chunks under (% full)', type: 'number', value: 5, showIf: bal,
+          hint: 'Fill in at least one of the two.' },
         { name: 'frequency', label: 'How often', type: 'select', value: 'daily',
           options: [['hourly', 'Hourly'], ['daily', 'Daily'], ['weekly', 'Weekly'], ['monthly', 'Monthly']] },
         { name: 'minute', label: 'Minute past the hour', type: 'number', value: 0, required: true,

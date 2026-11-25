@@ -54,9 +54,9 @@ Obviously we're in the super early stages of this project and using Claude to he
 - **Snapper**: list, create and delete snapshots, compare two snapshots, edit the
   timeline/number retention settings, run cleanup.
 - **Schedules**: take snapshots on a schedule and keep only the newest few, or run a
-  scrub on a schedule. Needs the `/data` volume, see below.
+  scrub, balance or trim on a schedule. Needs the `/data` volume, see below.
 - **Notifications**: optionally send a webhook message (for example to Home Assistant)
-  when a scrub finds errors or a scheduled snapshot or scrub fails. See below.
+  when a scrub finds errors or a scheduled snapshot, scrub, balance or trim fails. See below.
 - **Maintenance**: scrub (start, cancel, resume), balance with usage filters, defragment
   (with optional recompression), trim, and a list of background jobs with their output.
 
@@ -141,8 +141,8 @@ volumes:
 
 ### Schedules
 
-The Schedules tab runs two kinds of job on a schedule (hourly, daily, weekly or
-monthly): a snapshot of a subvolume, or a scrub.
+The Schedules tab runs jobs on a schedule (hourly, daily, weekly or monthly): a
+snapshot of a subvolume, a scrub, a balance or a trim.
 
 <p>
   <a href="docs/screenshots/schedules-light.png"><picture>
@@ -157,6 +157,11 @@ snapshots that schedule made are ever touched (matching name, read-only, a snaps
 the same subvolume), so anything you made by hand in that folder is left alone. A scrub
 is skipped if one is already running.
 
+A balance only rewrites chunks that are less full than the percentages you choose (the
+dialog starts at 10% for data and 5% for metadata), so it stays gentle. It is skipped if
+a balance or a scrub is already running. A trim runs `fstrim` and is skipped on devices
+that do not support it.
+
 Schedules and a short history are saved in `/data`, which is why the compose file mounts
 `./data:/data`. Without it the tab says so and nothing is scheduled. Times are the
 container's time, so set `TZ` in the compose file. If the container was down when a run
@@ -170,7 +175,7 @@ on a schedule, use one or the other so you do not get doubles.
 ### Notifications
 
 Set `BTRFS_UI_WEBHOOK_URL` and btrfs-ui sends a small JSON message to that address when a
-scrub finishes with errors, or when a scheduled snapshot or scrub fails. It looks at
+scrub finishes with errors, or when a scheduled snapshot, scrub, balance or trim fails. It looks at
 `btrfs scrub status` once a minute, so a scrub started by hand, by a schedule or by cron
 is covered. Add `BTRFS_UI_WEBHOOK_SCRUB_OK=1` to hear about clean scrubs too.
 **Settings → Notifications** has a button that sends a test message.

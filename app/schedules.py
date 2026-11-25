@@ -1,17 +1,20 @@
-"""Opt-in scheduled snapshots and scrubs.
+"""Opt-in scheduled snapshots, scrubs, balances and trims.
 
 Rules live in one JSON file in the data directory, a volume the user adds to
 the compose file. Nothing is scheduled unless that directory exists, and
 nothing runs in read-only mode.
 
-Two kinds of rule:
+Kinds of rule:
 
 * ``snapshot``: take a read-only snapshot of a subvolume into a directory and
   keep only the newest ``keep`` snapshots made by this rule. Retention only
   ever deletes a snapshot when ALL of these hold: it lives directly in the
   rule's destination directory, its name is ``<prefix>-YYYY-MM-DD_HHMM``, it
   is read-only, and it is a snapshot of the rule's source subvolume.
-* ``scrub``: start a scrub, unless one is already running."""
+* ``scrub``: start a scrub, unless one is already running.
+* ``balance``: start a balance that only rewrites chunks less full than the chosen
+  percentages, unless a balance or a scrub is already running.
+* ``trim``: run ``fstrim`` on the filesystem and report how much was trimmed."""
 import json
 import logging
 import os
@@ -28,7 +31,9 @@ from .fs import ApiError, clean_rel
 log = logging.getLogger("btrfs-ui")
 B = btrfs.BTRFS
 
-TYPES = ("snapshot", "scrub")
+TYPES = ("snapshot", "scrub", "balance", "trim")
+USAGE_FIELDS = (("data_usage", "data"), ("metadata_usage", "metadata"))
+TRIM_TIMEOUT = 3600
 FREQUENCIES = ("hourly", "daily", "weekly", "monthly")
 MAX_RULES = 50
 HISTORY_LIMIT = 200
@@ -166,6 +171,11 @@ def _stored_rule_ok(r):
             ok = (isinstance(r["source"], str) and isinstance(r["dest"], str)
                   and PREFIX.fullmatch(r["prefix"]) and isinstance(r["keep"], int)
                   and not isinstance(r["keep"], bool) and r["keep"] >= 1)
+        if ok and r["type"] == "balance":
+            values = [r.get(key) for key, _ in USAGE_FIELDS]
+            ok = (any(v is not None for v in values)
+                  and all(v is None or (isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 100)
+                          for v in values))
         return bool(ok)
     except (KeyError, TypeError):
         return False
@@ -295,8 +305,12 @@ class Scheduler:
                     status, message = "skipped", "The filesystem is not mounted in this container"
                 elif rule["type"] == "snapshot":
                     status, message = self._run_snapshot(rule, f, now)
-                else:
+                elif rule["type"] == "scrub":
                     status, message = self._run_scrub(f)
+                elif rule["type"] == "balance":
+                    status, message = self._run_balance(rule, f)
+                else:
+                    status, message = self._run_trim(f)
             except (ApiError, proc.CmdError) as e:
                 status, message = "error", e.message
             except Exception:
@@ -358,9 +372,35 @@ class Scheduler:
         proc.run_detached([B, "scrub", "start", mp])
         return "ok", "Scrub started"
 
+    def _run_balance(self, rule, f):
+        mp = f.primary.mount_point
+        rc, out, err = proc.run([B, "balance", "status", mp], check=False)
+        state = btrfs.balance_summary(out or err)["state"]
+        if state in ("running", "paused", "cancelling"):
+            return "skipped", f"A balance is already {state}"
+        rc, out, err = proc.run([B, "scrub", "status", mp], check=False)
+        if btrfs.scrub_summary(out or err)["running"]:
+            return "skipped", "A scrub is running"
+        args, parts = [B, "balance", "start", "--background"], []
+        for key, name in USAGE_FIELDS:
+            if rule.get(key) is not None:
+                args.append(f"-{name[0]}usage={rule[key]}")
+                parts.append(f"{name} under {rule[key]}%")
+        proc.run_detached(args + [mp])
+        return "ok", "Balance started (" + ", ".join(parts) + ")"
+
+    def _run_trim(self, f):
+        try:
+            rc, out, err = proc.run(["fstrim", "-v", f.primary.mount_point], timeout=TRIM_TIMEOUT)
+        except proc.CmdError as e:
+            if "not supported" in e.message.lower():
+                return "skipped", "The devices do not support trim (discard)"
+            raise
+        return "ok", " ".join((out or err).split())[:300] or "Trim finished"
+
     @staticmethod
     def label(rule):
-        return f"Snapshot of {rule['source']}" if rule["type"] == "snapshot" else "Scrub"
+        return f"Snapshot of {rule['source']}" if rule["type"] == "snapshot" else rule["type"].capitalize()
 
     # -- what the API uses --
 
@@ -377,7 +417,7 @@ class Scheduler:
     def validate(self, data):
         typ = data.get("type")
         if typ not in TYPES:
-            raise ApiError("Type must be 'snapshot' or 'scrub'")
+            raise ApiError("Type must be 'snapshot', 'scrub', 'balance' or 'trim'")
         f = self.registry.get(str(data.get("fs") or ""))
         rule = {"type": typ, "fs": f.id, "enabled": True, **_when(data)}
         if typ == "snapshot":
@@ -395,6 +435,14 @@ class Scheduler:
                 raise ApiError("The name prefix may use letters, digits, '.', '_' and '-' (up to 40)")
             rule.update(source=source, dest=dest, prefix=prefix,
                         keep=_int(data.get("keep"), "keep", 1, 1000))
+        if typ == "balance":
+            usage = {key: None for key, _ in USAGE_FIELDS}
+            for key, name in USAGE_FIELDS:
+                if data.get(key) not in (None, ""):
+                    usage[key] = _int(data.get(key), f"{name} usage", 0, 100)
+            if all(v is None for v in usage.values()):
+                raise ApiError("Enter a usage percentage for data and/or metadata chunks")
+            rule.update(usage)
         return rule
 
     def create(self, data):

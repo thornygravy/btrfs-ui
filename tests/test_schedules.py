@@ -147,6 +147,8 @@ class SchedRunner(Runner):
         self.deleted = []
         self.created = []
         self.scrub_running = False
+        self.balance_text = None   # what `btrfs balance status` prints, when a test wants a balance
+        self.trim = ("/mnt/tank: 1.2 GiB (1288490188 bytes) trimmed on /dev/loop0\n", None)  # (output, error)
 
     def add(self, n, name, parent=DATA_UUID, ro=True):
         self.extra.append((n, name, parent))
@@ -176,6 +178,15 @@ class SchedRunner(Runner):
             self.deleted.append(int(args[4]))
             self.calls.append(list(args))
             return 0, "", ""
+        if args[:3] == ["btrfs", "balance", "status"] and self.balance_text:
+            self.calls.append(list(args))
+            return 0, self.balance_text, ""
+        if args[0] == "fstrim":
+            from app import proc
+            self.calls.append(list(args))
+            if self.trim[1]:
+                raise proc.CmdError(self.trim[1], 1)
+            return 0, self.trim[0], ""
         if args[:3] == ["btrfs", "scrub", "status"] and self.scrub_running:
             self.calls.append(list(args))
             return 0, "UUID: x\nScrub started:    Sat Nov 14 11:34:19 2026\nStatus:           running\n", ""
@@ -446,6 +457,138 @@ def test_scrub_rule_skips_when_one_is_running(client, srunner):
     srunner.scrub_running = True
     res = client.post(f"/api/schedules/{r['id']}/run", json={}, headers=H).get_json()["result"]
     assert res["status"] == "skipped" and srunner.detached == []
+
+
+def new_rule(c, typ, **kw):
+    body = {"type": typ, "fs": UUID, "frequency": "monthly", "monthday": 1, "time": "02:00", **kw}
+    return c.post("/api/schedules", json=body, headers=H)
+
+
+def run_now(c, rule_id):
+    return c.post(f"/api/schedules/{rule_id}/run", json={}, headers=H).get_json()["result"]
+
+
+# ---- balance ------------------------------------------------------------------
+
+def test_balance_rule_starts_a_gentle_balance(client, srunner):
+    r = new_rule(client, "balance", data_usage=10, metadata_usage=5)
+    assert r.status_code == 200
+    rule_ = r.get_json()["rule"]
+    assert rule_["data_usage"] == 10 and rule_["metadata_usage"] == 5
+    res = run_now(client, rule_["id"])
+    assert res["status"] == "ok" and res["message"] == "Balance started (data under 10%, metadata under 5%)"
+    cmd = srunner.detached[0]
+    assert cmd[:4] == ["btrfs", "balance", "start", "--background"]
+    assert cmd[4:6] == ["-dusage=10", "-musage=5"] and "--full-balance" not in cmd
+
+
+def test_balance_can_cover_just_one_kind_of_chunk(client, srunner):
+    only_data = new_rule(client, "balance", data_usage="20", metadata_usage="").get_json()["rule"]
+    assert only_data["metadata_usage"] is None
+    run_now(client, only_data["id"])
+    assert srunner.detached[-1][4:-1] == ["-dusage=20"]
+    only_meta = new_rule(client, "balance", metadata_usage=0).get_json()["rule"]
+    assert only_meta["data_usage"] is None and only_meta["metadata_usage"] == 0
+    run_now(client, only_meta["id"])
+    assert srunner.detached[-1][4:-1] == ["-musage=0"]
+
+
+@pytest.mark.parametrize("change,message", [
+    ({}, "usage percentage"),
+    ({"data_usage": "", "metadata_usage": ""}, "usage percentage"),
+    ({"data_usage": 101}, "data usage"),
+    ({"data_usage": -1}, "data usage"),
+    ({"metadata_usage": "lots"}, "metadata usage"),
+    ({"data_usage": True}, "data usage"),
+])
+def test_balance_rule_needs_sensible_percentages(client, change, message):
+    r = new_rule(client, "balance", **change)
+    assert r.status_code == 400 and message in r.get_json()["error"]
+    assert client.get("/api/schedules").get_json()["rules"] == []
+
+
+@pytest.mark.parametrize("text,word", [
+    ("Balance on '/mnt/tank' is running\n1 out of about 5 chunks balanced\n", "running"),
+    ("Balance on '/mnt/tank' is paused\n", "paused"),
+    ("Balance on '/mnt/tank' is running, cancel requested\n", "cancelling"),
+])
+def test_balance_is_skipped_while_another_balance_exists(client, srunner, text, word):
+    rid = new_rule(client, "balance", data_usage=10).get_json()["rule"]["id"]
+    srunner.balance_text = text
+    res = run_now(client, rid)
+    assert res["status"] == "skipped" and word in res["message"] and srunner.detached == []
+
+
+def test_balance_is_skipped_while_a_scrub_runs(client, srunner):
+    rid = new_rule(client, "balance", data_usage=10).get_json()["rule"]["id"]
+    srunner.scrub_running = True
+    res = run_now(client, rid)
+    assert res["status"] == "skipped" and "scrub" in res["message"] and srunner.detached == []
+
+
+def test_a_balance_rule_runs_when_due_and_only_once(client, srunner):
+    rid = new_rule(client, "balance", data_usage=10, frequency="daily", time="03:00").get_json()["rule"]["id"]
+    s = sched(client)
+    s.store.rules[0]["handled"] = S._epoch(dt("2026-11-18 03:00"))
+    now = S._epoch(dt("2026-11-19 03:05"))
+    assert s.tick(now) == [(rid, "ok")]
+    assert s.tick(now + 60) == []
+    assert len(srunner.detached) == 1
+
+
+# ---- trim ---------------------------------------------------------------------
+
+def test_trim_rule_runs_fstrim_and_reports_what_it_freed(client, srunner):
+    r = new_rule(client, "trim", frequency="weekly", weekday=6)
+    assert r.status_code == 200
+    rule_ = r.get_json()["rule"]
+    assert "data_usage" not in rule_ and "source" not in rule_
+    res = run_now(client, rule_["id"])
+    assert res["status"] == "ok" and res["message"] == "/mnt/tank: 1.2 GiB (1288490188 bytes) trimmed on /dev/loop0"
+    trims = [c for c in srunner.calls if c[0] == "fstrim"]
+    assert len(trims) == 1 and trims[0][1] == "-v" and trims[0][2].endswith("pool")
+
+
+def test_trim_with_no_output_still_says_it_finished(client, srunner):
+    srunner.trim = ("", None)
+    rid = new_rule(client, "trim").get_json()["rule"]["id"]
+    assert run_now(client, rid)["message"] == "Trim finished"
+
+
+def test_trim_on_devices_without_discard_is_skipped_not_an_error(client, srunner):
+    srunner.trim = ("", "fstrim: /mnt/tank: the discard operation is not supported")
+    rid = new_rule(client, "trim").get_json()["rule"]["id"]
+    res = run_now(client, rid)
+    assert res["status"] == "skipped" and "do not support trim" in res["message"]
+
+
+def test_a_failed_trim_is_an_error_with_the_reason(client, srunner):
+    srunner.trim = ("", "fstrim: /mnt/tank: FITRIM ioctl failed: Operation not permitted")
+    rid = new_rule(client, "trim").get_json()["rule"]["id"]
+    res = run_now(client, rid)
+    assert res["status"] == "error" and "Operation not permitted" in res["message"]
+
+
+def test_rule_names_in_the_history(client, srunner):
+    for typ, extra in (("scrub", {}), ("balance", {"data_usage": 10}), ("trim", {})):
+        run_now(client, new_rule(client, typ, **extra).get_json()["rule"]["id"])
+    whats = [e["what"] for e in client.get("/api/schedules").get_json()["history"]]
+    assert whats == ["Trim", "Balance", "Scrub"]
+
+
+def test_unknown_types_are_still_refused(client):
+    r = new_rule(client, "defrag")
+    assert r.status_code == 400 and "balance" in r.get_json()["error"]
+
+
+def test_a_stored_balance_rule_is_checked_when_loaded(tmp_path):
+    good = dict(rule(type="balance"), data_usage=10, metadata_usage=None)
+    (tmp_path / "schedules.json").write_text(json.dumps({"rules": [good]}))
+    assert S.Store(str(tmp_path)).enabled
+    for bad in (dict(good, data_usage=None), dict(good, data_usage=101), dict(good, data_usage=True),
+                dict(good, data_usage="10")):
+        (tmp_path / "schedules.json").write_text(json.dumps({"rules": [bad]}))
+        assert not S.Store(str(tmp_path)).enabled
 
 
 def test_history_is_trimmed(client, srunner, monkeypatch):

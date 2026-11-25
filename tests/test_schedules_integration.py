@@ -113,3 +113,31 @@ def test_a_real_tick_runs_a_due_rule(sched):
     ran = s.tick(time.time())
     assert ran and ran[0][0] == scrub["id"]
     time.sleep(2)  # let the scrub finish before the filesystem is unmounted
+
+
+def test_balance_rule_runs_a_real_balance(sched):
+    c, fs, mnt, data = sched
+    r = c.post("/api/schedules", headers=H, json={
+        "type": "balance", "fs": fs, "data_usage": 10, "metadata_usage": 5,
+        "frequency": "monthly", "monthday": 1, "time": "02:00"})
+    assert r.status_code == 200, r.get_json()
+    res = c.post(f"/api/schedules/{r.get_json()['rule']['id']}/run", json={}, headers=H).get_json()["result"]
+    assert res["status"] == "ok" and "Balance started" in res["message"], res
+    end = time.time() + 30
+    while time.time() < end:  # let it finish before the filesystem is unmounted
+        if c.get(f"/api/fs/{fs}/balance").get_json()["state"] == "none":
+            break
+        time.sleep(0.3)
+    assert c.get(f"/api/fs/{fs}/balance").get_json()["state"] == "none"
+
+
+def test_trim_rule_runs_a_real_fstrim(sched):
+    c, fs, mnt, data = sched
+    r = c.post("/api/schedules", headers=H, json={
+        "type": "trim", "fs": fs, "frequency": "weekly", "weekday": 6, "time": "04:00"})
+    assert r.status_code == 200, r.get_json()
+    res = c.post(f"/api/schedules/{r.get_json()['rule']['id']}/run", json={}, headers=H).get_json()["result"]
+    # a loopback file may or may not pass discards down; it must never be a crash
+    assert res["status"] in ("ok", "skipped"), res
+    if res["status"] == "ok":
+        assert "trimmed" in res["message"]
