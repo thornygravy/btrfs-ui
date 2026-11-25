@@ -297,25 +297,27 @@ async function viewOverview(root) {
       bar(pct, 'space-bar')),
 
     section('Allocation',
-      h('table', null,
+      h('table', { class: 'cards' },
         h('thead', null, h('tr', null,
           h('th', null, 'Type'), h('th', null, 'Profile'),
           h('th', { class: 'num' }, 'Allocated'), h('th', { class: 'num' }, 'Used'), h('th', null, ''))),
         h('tbody', null, d.allocation.map((a) => h('tr', null,
-          h('td', null, a.type), h('td', null, a.profile),
-          h('td', { class: 'num' }, fmtBytes(a.total)), h('td', { class: 'num' }, fmtBytes(a.used)),
-          h('td', null, a.total ? bar((a.used / a.total) * 100) : null)))))),
+          h('td', { class: 'title' }, a.type), h('td', { 'data-label': 'Profile' }, a.profile),
+          h('td', { class: 'num', 'data-label': 'Allocated' }, fmtBytes(a.total)),
+          h('td', { class: 'num', 'data-label': 'Used' }, fmtBytes(a.used)),
+          h('td', { class: 'wide' }, a.total ? bar((a.used / a.total) * 100) : null)))))),
 
     section('Devices',
-      h('table', null,
+      h('table', { class: 'cards' },
         h('thead', null, h('tr', null,
           h('th', null, 'ID'), h('th', null, 'Device'),
           h('th', { class: 'num' }, 'Size'), h('th', { class: 'num' }, 'Allocated'), h('th', null, 'Errors'))),
         h('tbody', null, d.devices.map((dev) => h('tr', null,
-          h('td', null, dev.devid),
-          h('td', { class: 'mono' }, dev.path, dev.missing ? [' ', badge('missing', 'err')] : null),
-          h('td', { class: 'num' }, fmtBytes(dev.size)), h('td', { class: 'num' }, fmtBytes(dev.used)),
-          h('td', null, errorCell(dev))))))),
+          h('td', { 'data-label': 'ID' }, dev.devid),
+          h('td', { class: 'mono title' }, dev.path, dev.missing ? [' ', badge('missing', 'err')] : null),
+          h('td', { class: 'num', 'data-label': 'Size' }, fmtBytes(dev.size)),
+          h('td', { class: 'num', 'data-label': 'Allocated' }, fmtBytes(dev.used)),
+          h('td', { 'data-label': 'Errors' }, errorCell(dev))))))),
 
     section('Status',
       kv([
@@ -360,7 +362,7 @@ async function viewSubvolumes(root) {
     count.textContent = `${rows.length} of ${all.length}`;
     tbody.replaceChildren(...rows.map(subvolRow));
     if (!rows.length) {
-      tbody.append(h('tr', null, h('td', { colspan: 6, class: 'muted' }, 'No subvolumes match.')));
+      tbody.append(h('tr', null, h('td', { colspan: 6, class: 'muted wide' }, 'No subvolumes match.')));
     }
   }
 
@@ -370,14 +372,14 @@ async function viewSubvolumes(root) {
     if (s.default) flags.push(badge('default', 'accent'));
     if (s.mounted) flags.push(badge('mounted', 'ok'));
     return h('tr', null,
-      h('td', { class: 'mono' }, s.path),
-      h('td', null, s.id),
-      h('td', null, s.snapshot ? 'snapshot' : 'subvolume',
+      h('td', { class: 'mono title' }, s.path),
+      h('td', { 'data-label': 'ID' }, s.id),
+      h('td', { 'data-label': 'Type' }, s.snapshot ? 'snapshot' : 'subvolume',
         s.created ? h('div', { class: 'muted' }, fmtTime(s.created)) : null),
-      h('td', { class: 'num' }, s.referenced != null
+      h('td', { class: 'num', 'data-label': 'Size' }, s.referenced != null
         ? h('span', null, fmtBytes(s.referenced), h('div', { class: 'muted' }, fmtBytes(s.exclusive) + ' excl.')) : ''),
-      h('td', null, flags),
-      h('td', { class: 'actions' },
+      h('td', { class: 'wide' }, flags),
+      h('td', { class: 'actions wide' },
         h('button', { class: 'link', disabled: !s.abs, onclick: () => snapshotDialog(s) }, 'Snapshot'),
         h('button', { class: 'link', disabled: !s.abs, onclick: () => toggleReadonly(s) },
           s.readonly ? 'Make writable' : 'Make read-only'),
@@ -447,7 +449,7 @@ async function viewSubvolumes(root) {
     d.top_level_mounted ? null : h('div', { class: 'panel warn' },
       'The filesystem top level (subvolid=5) is not mounted in this container, so some subvolumes are not reachable.'),
     panel(
-      h('table', null,
+      h('table', { class: 'cards' },
         h('thead', null, h('tr', null,
           h('th', null, 'Path'), h('th', null, 'ID'), h('th', null, 'Type'),
           h('th', { class: 'num' }, d.quotas ? 'Size' : ''), h('th', null, ''), h('th', null, ''))),
@@ -517,11 +519,11 @@ async function viewSnapper(root) {
         syncButtons();
       });
       return h('tr', null,
-        h('td', null, box), h('td', null, s.number),
-        h('td', null, s.type + (s.pre_number ? ` (of ${s.pre_number})` : '')),
-        h('td', null, fmtTime(s.date)), h('td', null, s.user),
-        h('td', { class: 'muted' }, s.cleanup),
-        h('td', null, s.description, s.userdata ? h('div', { class: 'muted' }, s.userdata) : null));
+        h('td', { class: 'pick' }, box), h('td', { class: 'title' }, s.number),
+        h('td', { 'data-label': 'Type' }, s.type + (s.pre_number ? ` (of ${s.pre_number})` : '')),
+        h('td', { 'data-label': 'Date' }, fmtTime(s.date)), h('td', { 'data-label': 'User' }, s.user),
+        h('td', { class: 'muted', 'data-label': 'Cleanup' }, s.cleanup),
+        h('td', { class: 'wide' }, s.description, s.userdata ? h('div', { class: 'muted' }, s.userdata) : null));
     });
 
     deleteBtn.addEventListener('click', async () => {
@@ -612,7 +614,7 @@ async function viewSnapper(root) {
         h('span', { class: 'spacer' }),
         h('button', { onclick: runCleanup }, 'Run cleanup…')),
       panel(snaps.length
-        ? h('table', null,
+        ? h('table', { class: 'cards snaps' },
           h('thead', null, h('tr', null,
             h('th', null, ''), h('th', null, '#'), h('th', null, 'Type'), h('th', null, 'Date'),
             h('th', null, 'User'), h('th', null, 'Cleanup'), h('th', null, 'Description'))),
@@ -651,16 +653,16 @@ async function viewSchedules(root) {
 
   function ruleRow(r) {
     return h('tr', null,
-      h('td', null,
+      h('td', { class: 'title' },
         r.type === 'snapshot' ? h('span', null, 'Snapshot of ', h('span', { class: 'mono' }, r.source)) : 'Scrub',
         r.type === 'snapshot'
           ? h('div', { class: 'muted' }, `${r.dest}/${r.prefix}-…, keep ${r.keep}`) : null),
-      h('td', null, whenText(r)),
-      h('td', { class: 'nowrap' }, r.enabled ? fmtTime(r.next_text) : badge('paused', 'warn')),
-      h('td', { class: 'nowrap' },
+      h('td', { 'data-label': 'Frequency' }, whenText(r)),
+      h('td', { class: 'nowrap', 'data-label': 'Next run' }, r.enabled ? fmtTime(r.next_text) : badge('paused', 'warn')),
+      h('td', { class: 'nowrap', 'data-label': 'Last run' },
         r.last_status ? badge(r.last_status, resultKind(r.last_status)) : h('span', { class: 'muted' }, 'not yet'),
         r.last_text ? h('div', { class: 'muted' }, fmtTime(r.last_text)) : null),
-      h('td', { class: 'actions' },
+      h('td', { class: 'actions wide' },
         h('button', { class: 'link', disabled: ro, onclick: () => runNow(r) }, 'Run now'),
         h('button', { class: 'link', disabled: ro, onclick: () => setEnabled(r, !r.enabled) },
           r.enabled ? 'Pause' : 'Resume'),
@@ -687,16 +689,16 @@ async function viewSchedules(root) {
     }
     if (o.enabled) {
       parts.push(panel(mine.length
-        ? h('table', null,
+        ? h('table', { class: 'cards' },
           h('thead', null, h('tr', null, ['Task', 'Frequency', 'Next run', 'Last run', ''].map((t) => h('th', null, t)))),
           h('tbody', null, mine.map(ruleRow)))
         : h('p', { class: 'muted' }, 'No schedules yet for this filesystem.')));
       parts.push(section('Recent runs', log.length
-        ? h('table', null, h('tbody', null, log.map((e) => h('tr', null,
+        ? h('table', { class: 'cards' }, h('tbody', null, log.map((e) => h('tr', null,
           h('td', { class: 'nowrap' }, fmtTime(e.time_text)),
-          h('td', null, e.what),
+          h('td', { class: 'title' }, e.what),
           h('td', null, badge(e.status, resultKind(e.status))),
-          h('td', null, e.message, e.trigger === 'manual' ? h('span', { class: 'muted' }, ' (run by hand)') : null)))))
+          h('td', { class: 'wide' }, e.message, e.trigger === 'manual' ? h('span', { class: 'muted' }, ' (run by hand)') : null)))))
         : h('p', { class: 'muted' }, 'Nothing has run yet.')));
     }
     timezone.textContent = o.enabled
@@ -898,13 +900,13 @@ async function viewMaintenance(root) {
     jobsSig = sig;
     const open = new Set([...jobsBox.querySelectorAll('details[open]')].map((d) => d.dataset.id));
     if (!list.length) { jobsBox.replaceChildren(h('p', { class: 'muted' }, 'No jobs yet.')); return; }
-    jobsBox.replaceChildren(h('table', null, h('tbody', null, list.map((j) => {
+    jobsBox.replaceChildren(h('table', { class: 'cards' }, h('tbody', null, list.map((j) => {
       const det = h('details', { 'data-id': j.id },
         h('summary', null, 'output'),
         h('pre', null, j.output.join('\n') || '(no output)'));
       if (open.has(j.id)) det.open = true;
       return h('tr', null,
-        h('td', null, j.title, h('div', { class: 'muted' }, fmtTime(j.started_text)), det),
+        h('td', { class: 'title' }, j.title, h('div', { class: 'muted' }, fmtTime(j.started_text)), det),
         h('td', null, badge(j.state, stateKind(j.state))),
         h('td', { class: 'actions' }, j.state === 'running'
           ? h('button', { class: 'link', onclick: () => perform(() => api('POST', `/api/jobs/${j.id}/cancel`, {})) }, 'Cancel')
@@ -1011,7 +1013,7 @@ async function render() {
   clearInterval(state.timer);
   const root = $('#view');
   const needsFs = !['snapper', 'settings'].includes(state.tab);
-  $('#fs').hidden = !needsFs || !state.filesystems.length;
+  $('#fs').hidden = !state.filesystems.length;   // always shown, so the header does not jump between tabs
   document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('active', a.dataset.tab === state.tab));
   const holder = h('div');
   if (needsFs && !state.fsId) { root.replaceChildren(noFilesystems()); return; }
