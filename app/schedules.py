@@ -11,10 +11,7 @@ Two kinds of rule:
   ever deletes a snapshot when ALL of these hold: it lives directly in the
   rule's destination directory, its name is ``<prefix>-YYYY-MM-DD_HHMM``, it
   is read-only, and it is a snapshot of the rule's source subvolume.
-* ``scrub``: start a scrub, unless one is already running.
-
-Times are the container's local time (set ``TZ`` to change it).
-"""
+* ``scrub``: start a scrub, unless one is already running."""
 import json
 import logging
 import os
