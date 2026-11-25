@@ -60,11 +60,20 @@ a.info:hover { color: var(--accent); }
 h2 a.info { margin-left: 0.5714rem; }
 
 nav { background: var(--panel); border-bottom: 1px solid var(--line); }
-nav .wrap { display: flex; gap: 0.2857rem; padding-top: 0.2857rem; padding-bottom: 0.7143rem; }
+nav .wrap {
+  display: flex; gap: 0.2857rem; padding-top: 0.2857rem; padding-bottom: 0.7143rem;
+  position: relative; overflow-x: auto; scrollbar-width: none;
+}
+nav .wrap::-webkit-scrollbar { display: none; }
 nav a {
   padding: 0.4286rem 1rem; border-radius: 0.5714rem; color: var(--muted);
-  text-decoration: none; font-weight: 500;
+  text-decoration: none; font-weight: 500; white-space: nowrap; flex: none;
 }
+nav a:focus-visible { outline-offset: -2px; }
+/* When the tabs do not all fit, they scroll sideways and the cut-off edge fades out. */
+nav.more-right .wrap { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent); }
+nav.more-left .wrap { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent); }
+nav.more-left.more-right .wrap { -webkit-mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent); }
 nav a:hover { background: var(--soft); color: var(--fg); }
 nav a.active { background: var(--accent-soft); color: var(--accent); }
 
@@ -131,6 +140,14 @@ th.num, td.num { text-align: right; }
 td.actions { text-align: right; white-space: nowrap; }
 /* On narrow screens dates and row buttons may wrap so tables fit. */
 @media (max-width: 900px) { .nowrap, td.actions { white-space: normal; } }
+
+/* Phones: the logo and Sign out share the top row, the filesystem picker gets its own. */
+@media (max-width: 700px) {
+  .wrap { padding-left: 1rem; padding-right: 1rem; }
+  header .wrap { flex-wrap: wrap; row-gap: 0.5714rem; }
+  header #fs { order: 1; flex: 1 1 100%; min-width: 0; }
+  .brand, a.docs, #logout { white-space: nowrap; }
+}
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover td { background: var(--soft); }
 .panel table th:first-child, .panel table td:first-child { padding-left: 0; }
@@ -141,6 +158,13 @@ dl.kv dt { color: var(--muted); }
 dl.kv dd { margin: 0; word-break: break-word; }
 /* In Settings the labels line up with the middle of each control. */
 dl.kv.form dt { padding-top: 0.3929rem; }
+@media (max-width: 700px) {   /* phones: the label sits above its value */
+  dl.kv { grid-template-columns: minmax(0, 1fr); gap: 0.1429rem 0; }
+  dl.kv dd { margin-bottom: 0.7143rem; }
+  dl.kv dd:last-child { margin-bottom: 0; }
+  dl.kv.form dt { padding-top: 0; }
+  dl.kv select, dl.kv input[type=text], dl.kv input[type=number], dl.kv input[type=password] { max-width: 100%; box-sizing: border-box; }
+}
 
 .badge {
   display: inline-block; padding: 0 0.6429rem; margin-right: 0.2857rem; border-radius: 999px;

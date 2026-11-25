@@ -1023,11 +1023,27 @@ async function render() {
   }
 }
 
+// The tab row scrolls sideways on a narrow screen: fade the edge that is cut off, and keep
+// the tab you are on in view.
+function tabEdges() {
+  const row = $('#tabs');
+  const nav = row.parentElement;
+  nav.classList.toggle('more-left', row.scrollLeft > 1);
+  nav.classList.toggle('more-right', row.scrollLeft + row.clientWidth < row.scrollWidth - 1);
+}
+
+function showActiveTab() {
+  const here = document.querySelector('#tabs a.active');
+  if (here) $('#tabs').scrollLeft = here.offsetLeft - ($('#tabs').clientWidth - here.offsetWidth) / 2;
+  tabEdges();
+}
+
 function route() {
   const shown = visibleTabs().map(([id]) => id);
   const t = location.hash.slice(1);
   state.tab = shown.includes(t) ? t : shown.includes(state.settings.tab) ? state.settings.tab : 'overview';
   render();
+  showActiveTab();
 }
 
 function showLogin() {
@@ -1048,6 +1064,8 @@ async function startApp() {
 
   $('#tabs').replaceChildren(...visibleTabs().map(([id, label]) =>
     h('a', { href: '#' + id, 'data-tab': id }, label)));
+  $('#tabs').addEventListener('scroll', tabEdges, { passive: true });
+  window.addEventListener('resize', tabEdges);
 
   state.filesystems = await api('GET', '/api/filesystems');
   const fsSel = $('#fs');
