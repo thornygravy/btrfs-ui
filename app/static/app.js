@@ -701,8 +701,6 @@ async function viewSchedules(root) {
           h('td', { class: 'wide' }, e.message, e.trigger === 'manual' ? h('span', { class: 'muted' }, ' (run by hand)') : null)))))
         : h('p', { class: 'muted' }, 'Nothing has run yet.')));
     }
-    timezone.textContent = o.enabled
-      ? `Times are container time: ${o.timezone}. Set TZ in the compose file to change it.` : '';
     box.replaceChildren(...parts);
   }
 
@@ -767,8 +765,7 @@ async function viewSchedules(root) {
   }
 
   const newBtn = h('button', { class: 'primary', onclick: createDialog }, 'New schedule');
-  const timezone = h('span', { class: 'muted' });
-  append(root, h('div', { class: 'toolbar' }, timezone, h('span', { class: 'spacer' }), newBtn), box);
+  append(root, h('div', { class: 'toolbar' }, h('span', { class: 'spacer' }), newBtn), box);
   await refresh(true);
   state.timer = setInterval(() => refresh().catch(() => {}), 15000);
 }
