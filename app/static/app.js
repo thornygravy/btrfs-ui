@@ -999,9 +999,8 @@ function viewSettings(root) {
   append(root,
     section('Display',
       display,
-      h('div', { class: 'row' }, h('span', { class: 'muted' }, 'Preview'), preview),
-      h('div', { class: 'row' }, reset),
-      h('p', { class: 'muted' }, 'These settings are saved in this browser only.')),
+      h('p', { class: 'muted' }, 'These settings are saved in this browser only.'),
+      h('div', { class: 'row' }, reset)),
     section('Notifications', ...notifications),
     section('About',
       kv([
