@@ -263,6 +263,3 @@ dialog button.danger:hover:not(:disabled) { background: var(--danger-btn); filte
 .row.first { margin-top: 0; }
 .panel.warn { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 30%, var(--line)); }
 .panel.empty { text-align: center; padding: 2rem 1.2857rem; }
-
-/* While a swipe slides the page across, anything pushed past the edge is cut off, not scrolled to. */
-#app.sliding { overflow-x: clip; }

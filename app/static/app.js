@@ -1131,37 +1131,22 @@ window.addEventListener('hashchange', route);
 const SWIPE_MIN = 110;
 const SWIPE_RATIO = 2.5;
 let swipe = null;
-let sliding = false;
+let fading = false;
 
-// Slide the page across like a strip: the old tab leaves one edge as the next one arrives from
-// the other. The old tab is a frozen copy laid over the real page for the length of the slide.
-async function slideTo(id, dir) {
+// Fade the page out, switch tab, and fade the next one in.
+async function fadeTo(id) {
   const view = $('#view');
   if (calm.matches || !view.animate) { location.hash = '#' + id; return; }
-  const app = $('#app');
-  const old = view.cloneNode(true);
-  old.removeAttribute('id');
-  old.inert = true;
-  old.setAttribute('aria-hidden', 'true');
-  Object.assign(old.style, {
-    position: 'absolute', margin: '0', pointerEvents: 'none',
-    top: view.offsetTop + 'px', left: view.offsetLeft + 'px', width: view.offsetWidth + 'px',
-  });
-  sliding = true;
-  app.classList.add('sliding');
-  view.before(old);
+  fading = true;
   try {
+    const out = view.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 130, easing: 'ease-in', fill: 'forwards' });
+    await out.finished;
     location.hash = '#' + id;
-    const timing = { duration: 380, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' };
-    const leave = old.animate(
-      [{ transform: 'translateX(0)' }, { transform: `translateX(${dir * 100}%)` }], { ...timing, fill: 'forwards' });
-    const arrive = view.animate(
-      [{ transform: `translateX(${dir * -100}%)` }, { transform: 'translateX(0)' }], timing);
-    await Promise.all([leave.finished, arrive.finished]);
+    const back = view.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
+    out.cancel();
+    await back.finished;
   } catch (e) { /* interrupted: the page is already where it should be */ } finally {
-    old.remove();
-    sliding = false;
-    app.classList.remove('sliding');
+    fading = false;
   }
 }
 
@@ -1175,7 +1160,7 @@ function scrollsSideways(el) {
 document.addEventListener('touchstart', (e) => {
   const t = e.target;
   swipe = null;
-  if (sliding || e.touches.length !== 1 || $('#app').hidden || !matchMedia('(max-width: 700px)').matches) return;
+  if (fading || e.touches.length !== 1 || $('#app').hidden || !matchMedia('(max-width: 700px)').matches) return;
   if (document.querySelector('dialog[open]') || t.closest('nav, header, input, select, textarea, dialog')) return;
   if (scrollsSideways(t)) return;
   swipe = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -1191,7 +1176,7 @@ document.addEventListener('touchend', (e) => {
   if (String(getSelection()).length) return;
   const ids = visibleTabs().map(([id]) => id);
   const next = ids[ids.indexOf(state.tab) + (dx < 0 ? 1 : -1)];
-  if (next) slideTo(next, dx < 0 ? -1 : 1);
+  if (next) fadeTo(next);
 }, { passive: true });
 
 document.addEventListener('touchcancel', () => { swipe = null; }, { passive: true });
