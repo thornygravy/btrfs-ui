@@ -1128,8 +1128,8 @@ window.addEventListener('hashchange', route);
 // On a phone, swipe sideways across the page to move to the next or previous tab. It takes a
 // long, mostly horizontal swipe, and is ignored in dialogs, form fields and anything that
 // scrolls sideways itself (the tab row, wide tables, code blocks).
-const SWIPE_MIN = 110;
-const SWIPE_RATIO = 2.5;
+const SWIPE_MIN = 30;
+const SWIPE_RATIO = 2.0;
 let swipe = null;
 let fading = false;
 
