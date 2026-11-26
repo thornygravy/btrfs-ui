@@ -157,12 +157,10 @@ dl.kv { display: grid; grid-template-columns: 12.1429rem 1fr; gap: 0.4286rem 1re
 dl.kv dt { color: var(--muted); }
 dl.kv dd { margin: 0; word-break: break-word; }
 /* In Settings the labels line up with the middle of each control. */
-dl.kv.form dt { padding-top: 0.3929rem; }
 @media (max-width: 700px) {   /* phones: the label sits above its value */
   dl.kv { grid-template-columns: minmax(0, 1fr); gap: 0.1429rem 0; }
   dl.kv dd { margin-bottom: 0.7143rem; }
   dl.kv dd:last-child { margin-bottom: 0; }
-  dl.kv.form dt { padding-top: 0; }
   dl.kv select, dl.kv input[type=text], dl.kv input[type=number], dl.kv input[type=password] { max-width: 100%; box-sizing: border-box; }
 }
 

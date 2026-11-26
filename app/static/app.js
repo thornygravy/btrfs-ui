@@ -259,8 +259,8 @@ function section(title, ...kids) {
 const SCRUB_HINT = 'No scrub history found. If scrubs have run on the host, share its ' +
   '/var/lib/btrfs directory with this container (see the README).';
 
-function kv(pairs, extra) {
-  return h('dl', { class: 'kv' + (extra ? ' ' + extra : '') },
+function kv(pairs) {
+  return h('dl', { class: 'kv' },
     pairs.filter(Boolean).flatMap(([k, v]) => [h('dt', null, k), h('dd', null, v)]));
 }
 
@@ -943,20 +943,14 @@ async function viewMaintenance(root) {
 
 function viewSettings(root) {
   const sess = state.session;
-  const preview = h('span', { class: 'mono' });
-  const showPreview = () => {
-    preview.textContent = `${fmtBytes(1.5 * 2 ** 40)}   ·   ${fmtTime('2026-11-23 16:05')}`;
-  };
-
-  function choice(label, key, options, hint) {
+  function choice(label, key, options) {
     const sel = h('select', null, options.map(([v, l]) => h('option', { value: v, selected: v === state.settings[key] }, l)));
     sel.addEventListener('change', () => {
       state.settings[key] = sel.value;
       storeSettings();
       applySettings();
-      showPreview();
     });
-    return [label, h('div', null, sel, hint ? h('p', { class: 'muted' }, hint) : null)];
+    return [label, h('div', null, sel)];
   }
 
   const tabOptions = visibleTabs().filter(([id]) => id !== 'settings');
@@ -989,7 +983,7 @@ function viewSettings(root) {
   const notifications = sess.webhook
     ? [
       h('p', null,
-        `Messages go to ${sess.webhook} when a scrub finds errors or a scheduled snapshot or scrub fails` +
+        `Messages go to ${sess.webhook} when a scrub finds errors or a scheduled snapshot, scrub, balance or trim fails` +
         (sess.webhookScrubOk ? ', and when a scrub finishes cleanly.' : '.')),
       h('div', { class: 'row first' }, test),
     ]
