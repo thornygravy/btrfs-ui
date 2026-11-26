@@ -70,10 +70,16 @@ nav a {
   text-decoration: none; font-weight: 500; white-space: nowrap; flex: none;
 }
 nav a:focus-visible { outline-offset: -2px; }
-/* When the tabs do not all fit, they scroll sideways and the cut-off edge fades out. */
-nav.more-right .wrap { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent); }
-nav.more-left .wrap { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent); }
-nav.more-left.more-right .wrap { -webkit-mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent); }
+/* When the tabs do not all fit, they scroll sideways and the cut-off edge fades out. The fades are
+   overlays that only change opacity: a mask on the scrolling row flickers on iOS when it changes. */
+nav { position: relative; }
+nav::before, nav::after {
+  content: ''; position: absolute; top: 0; bottom: 1px; width: 2.5rem; z-index: 1;
+  pointer-events: none; opacity: 0; transition: opacity 0.15s;
+}
+nav::before { left: 0; background: linear-gradient(to right, var(--panel), transparent); }
+nav::after { right: 0; background: linear-gradient(to left, var(--panel), transparent); }
+nav.more-left::before, nav.more-right::after { opacity: 1; }
 nav a:hover { background: var(--soft); color: var(--fg); }
 nav a.active { background: var(--accent-soft); color: var(--accent); }
 
