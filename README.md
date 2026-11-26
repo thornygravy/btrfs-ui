@@ -73,7 +73,7 @@ adding or removing devices.
        image: ghcr.io/thornygravy/btrfs-ui:latest
        container_name: btrfs-ui
        ports:
-         - "8008:8008"
+         - 8008:8008
        cap_add:
          - SYS_ADMIN           # required for btrfs ioctls (subvolume delete, scrub, balance, ...)
        security_opt:
