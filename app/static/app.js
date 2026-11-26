@@ -1133,25 +1133,33 @@ const SWIPE_RATIO = 2.5;
 let swipe = null;
 let sliding = false;
 
-// Glide the page out the way the finger went, switch tab, and glide the next one in.
+// Slide the page across like a strip: the old tab leaves one edge as the next one arrives from
+// the other. The old tab is a frozen copy laid over the real page for the length of the slide.
 async function slideTo(id, dir) {
   const view = $('#view');
   if (calm.matches || !view.animate) { location.hash = '#' + id; return; }
   const app = $('#app');
+  const old = view.cloneNode(true);
+  old.removeAttribute('id');
+  old.inert = true;
+  old.setAttribute('aria-hidden', 'true');
+  Object.assign(old.style, {
+    position: 'absolute', margin: '0', pointerEvents: 'none',
+    top: view.offsetTop + 'px', left: view.offsetLeft + 'px', width: view.offsetWidth + 'px',
+  });
   sliding = true;
   app.classList.add('sliding');
+  view.before(old);
   try {
-    const out = view.animate(
-      [{ transform: 'translateX(0)', opacity: 1 }, { transform: `translateX(${dir * 22}%)`, opacity: 0 }],
-      { duration: 140, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' });
-    await out.finished;
     location.hash = '#' + id;
-    const back = view.animate(
-      [{ transform: `translateX(${dir * -22}%)`, opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }],
-      { duration: 300, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
-    out.cancel();
-    await back.finished;
+    const timing = { duration: 380, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' };
+    const leave = old.animate(
+      [{ transform: 'translateX(0)' }, { transform: `translateX(${dir * 100}%)` }], { ...timing, fill: 'forwards' });
+    const arrive = view.animate(
+      [{ transform: `translateX(${dir * -100}%)` }, { transform: 'translateX(0)' }], timing);
+    await Promise.all([leave.finished, arrive.finished]);
   } catch (e) { /* interrupted: the page is already where it should be */ } finally {
+    old.remove();
     sliding = false;
     app.classList.remove('sliding');
   }
