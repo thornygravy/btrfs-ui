@@ -1039,9 +1039,16 @@ function tabEdges() {
   nav.classList.toggle('more-right', row.scrollLeft + row.clientWidth < row.scrollWidth - 1);
 }
 
+const calm = matchMedia('(prefers-reduced-motion: reduce)');
+
 function showActiveTab() {
-  const here = document.querySelector('#tabs a.active');
-  if (here) $('#tabs').scrollLeft = here.offsetLeft - ($('#tabs').clientWidth - here.offsetWidth) / 2;
+  const row = $('#tabs');
+  const here = row.querySelector('a.active');
+  if (here) {
+    const left = here.offsetLeft - (row.clientWidth - here.offsetWidth) / 2;
+    row.scrollTo({ left, behavior: state.routed && !calm.matches ? 'smooth' : 'auto' });
+  }
+  state.routed = true;
   tabEdges();
 }
 
@@ -1124,6 +1131,31 @@ window.addEventListener('hashchange', route);
 const SWIPE_MIN = 110;
 const SWIPE_RATIO = 2.5;
 let swipe = null;
+let sliding = false;
+
+// Glide the page out the way the finger went, switch tab, and glide the next one in.
+async function slideTo(id, dir) {
+  const view = $('#view');
+  if (calm.matches || !view.animate) { location.hash = '#' + id; return; }
+  const app = $('#app');
+  sliding = true;
+  app.classList.add('sliding');
+  try {
+    const out = view.animate(
+      [{ transform: 'translateX(0)', opacity: 1 }, { transform: `translateX(${dir * 22}%)`, opacity: 0 }],
+      { duration: 140, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' });
+    await out.finished;
+    location.hash = '#' + id;
+    const back = view.animate(
+      [{ transform: `translateX(${dir * -22}%)`, opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }],
+      { duration: 300, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+    out.cancel();
+    await back.finished;
+  } catch (e) { /* interrupted: the page is already where it should be */ } finally {
+    sliding = false;
+    app.classList.remove('sliding');
+  }
+}
 
 function scrollsSideways(el) {
   for (; el && el !== document.body; el = el.parentElement) {
@@ -1135,7 +1167,7 @@ function scrollsSideways(el) {
 document.addEventListener('touchstart', (e) => {
   const t = e.target;
   swipe = null;
-  if (e.touches.length !== 1 || $('#app').hidden || !matchMedia('(max-width: 700px)').matches) return;
+  if (sliding || e.touches.length !== 1 || $('#app').hidden || !matchMedia('(max-width: 700px)').matches) return;
   if (document.querySelector('dialog[open]') || t.closest('nav, header, input, select, textarea, dialog')) return;
   if (scrollsSideways(t)) return;
   swipe = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -1151,7 +1183,7 @@ document.addEventListener('touchend', (e) => {
   if (String(getSelection()).length) return;
   const ids = visibleTabs().map(([id]) => id);
   const next = ids[ids.indexOf(state.tab) + (dx < 0 ? 1 : -1)];
-  if (next) location.hash = '#' + next;
+  if (next) slideTo(next, dx < 0 ? -1 : 1);
 }, { passive: true });
 
 document.addEventListener('touchcancel', () => { swipe = null; }, { passive: true });
