@@ -1139,10 +1139,10 @@ async function fadeTo(id) {
   if (calm.matches || !view.animate) { location.hash = '#' + id; return; }
   fading = true;
   try {
-    const out = view.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: 'ease-in-out', fill: 'forwards' });
+    const out = view.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, easing: 'ease-in-out', fill: 'forwards' });
     await out.finished;
     location.hash = '#' + id;
-    const back = view.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: 'ease-in-out' });
+    const back = view.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250, easing: 'ease-in-out' });
     out.cancel();
     await back.finished;
   } catch (e) { /* interrupted: the page is already where it should be */ } finally {
