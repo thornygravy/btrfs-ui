@@ -964,11 +964,8 @@ function viewSettings(root) {
     choice('Default View', 'tab', tabOptions.map(([id, label]) => [id, label])),
     choice('Theme', 'theme', [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']]),
     choice('Font Size', 'size', [['small', 'Small'], ['normal', 'Normal'], ['large', 'Large']]),
-    choice('Unit Type', 'units', [['binary', 'Binary (TiB)'], ['decimal', 'Decimal (TB)']],
-      'Only changes how sizes are shown. Raw command output stays as btrfs prints it, and sizes you type, like 32M, are always binary.'),
-    choice('Time Format', 'clock', [['24', '24-hour'], ['12', '12-hour'], ['auto', 'Your browser\'s setting']],
-      `Times are in the server's time zone, ${sess.timezone}, the same clock snapper and your schedules use. ` +
-      'Set TZ in the compose file to change it.'),
+    choice('Unit Type', 'units', [['binary', 'Binary (TiB)'], ['decimal', 'Decimal (TB)']]),
+    choice('Time Format', 'clock', [['24', '24-hour'], ['12', '12-hour'], ['auto', 'Your browser\'s setting']]),
   ], 'form');
   showPreview();
 
