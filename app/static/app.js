@@ -1118,4 +1118,42 @@ $('#fs').addEventListener('change', (e) => {
 });
 window.addEventListener('hashchange', route);
 
+// On a phone, swipe sideways across the page to move to the next or previous tab. It takes a
+// long, mostly horizontal swipe, and is ignored in dialogs, form fields and anything that
+// scrolls sideways itself (the tab row, wide tables, code blocks).
+const SWIPE_MIN = 110;
+const SWIPE_RATIO = 2.5;
+let swipe = null;
+
+function scrollsSideways(el) {
+  for (; el && el !== document.body; el = el.parentElement) {
+    if (el.scrollWidth > el.clientWidth + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowX)) return true;
+  }
+  return false;
+}
+
+document.addEventListener('touchstart', (e) => {
+  const t = e.target;
+  swipe = null;
+  if (e.touches.length !== 1 || $('#app').hidden || !matchMedia('(max-width: 700px)').matches) return;
+  if (document.querySelector('dialog[open]') || t.closest('nav, header, input, select, textarea, dialog')) return;
+  if (scrollsSideways(t)) return;
+  swipe = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+  const from = swipe;
+  swipe = null;
+  if (!from || e.changedTouches.length !== 1) return;
+  const dx = e.changedTouches[0].clientX - from.x;
+  const dy = e.changedTouches[0].clientY - from.y;
+  if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy) * SWIPE_RATIO) return;
+  if (String(getSelection()).length) return;
+  const ids = visibleTabs().map(([id]) => id);
+  const next = ids[ids.indexOf(state.tab) + (dx < 0 ? 1 : -1)];
+  if (next) location.hash = '#' + next;
+}, { passive: true });
+
+document.addEventListener('touchcancel', () => { swipe = null; }, { passive: true });
+
 boot().catch((e) => { document.body.textContent = 'Failed to load: ' + e.message; });
