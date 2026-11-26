@@ -965,8 +965,8 @@ function viewSettings(root) {
     choice('Theme', 'theme', [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']]),
     choice('Font Size', 'size', [['small', 'Small'], ['normal', 'Normal'], ['large', 'Large']]),
     choice('Unit Type', 'units', [['binary', 'Binary (TiB)'], ['decimal', 'Decimal (TB)']]),
-    choice('Time Format', 'clock', [['24', '24-hour'], ['12', '12-hour'], ['auto', 'Your browser\'s setting']]),
-  ], 'form');
+    choice('Time Format', 'clock', [['24', '24-hour'], ['12', '12-hour']]),
+  ]);
 
   const reset = h('button', { onclick: () => {
     state.settings = { ...SETTING_DEFAULTS };
