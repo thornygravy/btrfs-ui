@@ -967,7 +967,6 @@ function viewSettings(root) {
     choice('Unit Type', 'units', [['binary', 'Binary (TiB)'], ['decimal', 'Decimal (TB)']]),
     choice('Time Format', 'clock', [['24', '24-hour'], ['12', '12-hour'], ['auto', 'Your browser\'s setting']]),
   ], 'form');
-  showPreview();
 
   const reset = h('button', { onclick: () => {
     state.settings = { ...SETTING_DEFAULTS };
