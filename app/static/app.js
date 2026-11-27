@@ -1002,7 +1002,7 @@ function viewSettings(root) {
         sess.btrfsProgs ? ['btrfs-progs', sess.btrfsProgs] : null,
         ['Permission Mode', sess.readonly ? 'Read-Only' : 'Read-Write'],
         ['Schedules', sess.schedules ? 'Enabled' : 'Disabled (see the Schedules tab)'],
-        ['Server Timezone', sess.timezone],
+        ['Server Timezone', sess.timezone]
       ]))));
 }
 
