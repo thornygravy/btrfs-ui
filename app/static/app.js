@@ -1003,7 +1003,7 @@ function viewSettings(root) {
         ['Permission Mode', sess.readonly ? 'Read-Only' : 'Read-Write'],
         ['Schedules', sess.schedules ? 'Enabled' : 'Disabled (see the Schedules tab)'],
         ['Server Timezone', sess.timezone]
-      ]))));
+      ])));
 }
 
 /* ---------- shell ---------- */
