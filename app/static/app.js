@@ -978,7 +978,7 @@ function viewSettings(root) {
       flash(e.message, true);
     }
     test.disabled = false;
-  } }, 'Send test message');
+  } }, 'Test');
 
   const notifications = sess.webhook
     ? [
