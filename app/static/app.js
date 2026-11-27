@@ -1000,11 +1000,10 @@ function viewSettings(root) {
       kv([
         ['btrfs-ui', sess.version],
         sess.btrfsProgs ? ['btrfs-progs', sess.btrfsProgs] : null,
-        ['Server time zone', sess.timezone],
-        ['Mode', sess.readonly ? 'Read-only (browse only)' : 'Read-write'],
-        ['Schedules', sess.schedules ? 'On' : 'Off (no data folder, see the Schedules tab)'],
-      ]),
-      h('p', null, docsLink('index.html', 'btrfs documentation'))));
+        ['Permission Mode', sess.readonly ? 'Read-Only' : 'Read-Write'],
+        ['Schedules', sess.schedules ? 'Enabled' : 'Disabled (see the Schedules tab)'],
+        ['Server Timezone', sess.timezone],
+      ]))));
 }
 
 /* ---------- shell ---------- */
