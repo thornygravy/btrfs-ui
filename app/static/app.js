@@ -442,7 +442,7 @@ async function viewSubvolumes(root) {
       count,
       h('span', { class: 'spacer' }),
       infoLink('Subvolumes.html', 'subvolumes'),
-      h('button', { class: 'primary', onclick: createDialog }, '+ Create Subvolume')),
+      h('button', { class: 'primary', onclick: createDialog }, 'Create Subvolume')),
     d.top_level_mounted ? null : h('div', { class: 'panel warn' },
       'The filesystem top level (subvolid=5) is not mounted in this container, so some subvolumes are not reachable.'),
     panel(
@@ -668,12 +668,12 @@ async function viewSchedules(root) {
         r.type === 'snapshot' ? h('span', null, 'Snapshot of ', h('span', { class: 'mono' }, r.source)) : ruleName(r),
         ruleDetail(r) ? h('div', { class: 'muted' }, ruleDetail(r)) : null),
       h('td', { 'data-label': 'Frequency' }, whenText(r)),
-      h('td', { class: 'nowrap', 'data-label': 'Next run' }, r.enabled ? fmtTime(r.next_text) : badge('paused', 'warn')),
-      h('td', { class: 'nowrap', 'data-label': 'Last run' },
+      h('td', { class: 'nowrap', 'data-label': 'Last Run' },
         r.last_status ? badge(r.last_status, resultKind(r.last_status)) : h('span', { class: 'muted' }, 'not yet'),
         r.last_text ? h('div', { class: 'muted' }, fmtTime(r.last_text)) : null),
+      h('td', { class: 'nowrap', 'data-label': 'Next Run' }, r.enabled ? fmtTime(r.next_text) : badge('paused', 'warn')),
       h('td', { class: 'actions wide' },
-        h('button', { class: 'link', disabled: ro, onclick: () => runNow(r) }, 'Run now'),
+        h('button', { class: 'link', disabled: ro, onclick: () => runNow(r) }, 'Run'),
         h('button', { class: 'link', disabled: ro, onclick: () => setEnabled(r, !r.enabled) },
           r.enabled ? 'Pause' : 'Resume'),
         h('button', { class: 'link danger', disabled: ro, onclick: () => remove(r) }, 'Delete')));
@@ -700,7 +700,7 @@ async function viewSchedules(root) {
     if (o.enabled) {
       parts.push(panel(mine.length
         ? h('table', { class: 'cards' },
-          h('thead', null, h('tr', null, ['Task', 'Frequency', 'Next run', 'Last run', ''].map((t) => h('th', null, t)))),
+          h('thead', null, h('tr', null, ['Task', 'Frequency', 'Last Run', 'Next Run', ''].map((t) => h('th', null, t)))),
           h('tbody', null, mine.map(ruleRow)))
         : h('p', { class: 'muted' }, 'No schedules yet for this filesystem.')));
       parts.push(section('Recent runs', log.length
@@ -780,7 +780,7 @@ async function viewSchedules(root) {
     if (r) perform(() => api('POST', '/api/schedules', { ...r, fs: id }), 'Schedule Created');
   }
 
-  const newBtn = h('button', { class: 'primary', onclick: createDialog }, '+ Create Schedule');
+  const newBtn = h('button', { class: 'primary', onclick: createDialog }, 'Create Schedule');
   append(root, h('div', { class: 'toolbar' }, h('span', { class: 'spacer' }), newBtn), box);
   await refresh(true);
   state.timer = setInterval(() => refresh().catch(() => {}), 15000);
@@ -811,7 +811,7 @@ async function viewMaintenance(root) {
   // scrub
   const scrubStatus = h('div');
   const scrubRO = h('input', { type: 'checkbox' });
-  const scrubStart = h('button', { class: 'primary' }, 'Start Scrub');
+  const scrubStart = h('button', { class: 'primary' }, 'Run');
   const scrubCancel = h('button', null, 'Cancel');
   const scrubResume = h('button', null, 'Resume');
   const scrubAct = (action) => perform(
@@ -824,11 +824,11 @@ async function viewMaintenance(root) {
   const balStatus = h('div');
   const dUsage = h('input', { type: 'number', min: 0, max: 100, value: 50, size: 4 });
   const mUsage = h('input', { type: 'number', min: 0, max: 100, value: 50, size: 4 });
-  const balStart = h('button', { class: 'primary' }, 'Start Balance');
+  const balStart = h('button', { class: 'primary' }, 'Run');
   const balCancel = h('button', null, 'Cancel');
   balStart.onclick = async () => {
     const r = await ask({
-      title: 'Start Balance',
+      title: 'Balance',
       message: 'Balance rewrites chunks and can take a long time and add load. ' +
         'Only chunks less than the given percent full are rewritten.',
       submit: 'Start',
