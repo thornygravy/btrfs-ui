@@ -994,7 +994,7 @@ function viewSettings(root) {
     section('Display',
       display,
       h('p', { class: 'muted' }, 'These settings are saved in this browser only.'),
-      h('div', { class: 'row' }, reset), h('p', { class: 'muted' }, 'These settings are saved in this browser only.')),
+      h('div', { class: 'row' }, reset)),
     section('Notifications', ...notifications),
     section('About',
       kv([
