@@ -957,7 +957,7 @@ function viewSettings(root) {
   const display = kv([
     choice('Default View', 'tab', tabOptions.map(([id, label]) => [id, label])),
     choice('Theme', 'theme', [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']]),
-    choice('Font Size', 'size', [['small', 'Small'], ['normal', 'Normal'], ['large', 'Large']]),
+    choice('Font Size', 'size', [['small', 'Small'], ['normal', 'Medium'], ['large', 'Large']]),
     choice('Unit Type', 'units', [['binary', 'Binary (TiB)'], ['decimal', 'Decimal (TB)']]),
     choice('Time Format', 'clock', [['24', '24-hour'], ['12', '12-hour']]),
   ]);
@@ -994,7 +994,7 @@ function viewSettings(root) {
     section('Display',
       display,
       h('p', { class: 'muted' }, 'These settings are saved in this browser only.'),
-      h('div', { class: 'row' }, reset)),
+      h('div', { class: 'row' }, reset), h('p', { class: 'muted' }, 'These settings are saved in this browser only.')),
     section('Notifications', ...notifications),
     section('About',
       kv([
