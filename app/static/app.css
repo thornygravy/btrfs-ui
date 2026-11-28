@@ -87,7 +87,7 @@ main.wrap { display: grid; gap: 1.1429rem; align-content: start; padding-top: 1.
 footer { padding: 1.7857rem 1.4286rem; text-align: center; color: var(--muted); font-size: 0.8929rem; }
 
 h1 { font-size: 1.4286rem; margin: 0 0 0.4286rem; }
-h2 { font-size: 1rem; font-weight: 600; margin: 0 0 0.8571rem; }
+h2 { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.8571rem; }
 h2 small { font-weight: 400; color: var(--muted); margin-left: 0.4286rem; }
 p { margin: 0.5714rem 0; }
 a { color: var(--accent); }
