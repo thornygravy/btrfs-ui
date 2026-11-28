@@ -283,10 +283,7 @@ async function viewOverview(root) {
       kv([
         ['Label', d.label || h('span', { class: 'muted' }, '(none)')],
         ['UUID', h('span', { class: 'mono' }, d.uuid)],
-        ['Mounted at', d.mounts.map((m) =>
-          h('div', null, h('span', { class: 'mono' }, m.path), ' ',
-            h('span', { class: 'muted' }, 'subvol ' + m.subvol)))],
-        ['Raw size', fmtBytes(u.device_size)],
+        ['Raw Size', fmtBytes(u.device_size)],
         ['Allocated', fmtBytes(u.device_allocated)],
         ['Used', `${fmtBytes(u.used)} (${pct.toFixed(1)}%)`],
         ['Free (estimated)', u.free_estimated != null
@@ -401,7 +398,7 @@ async function viewSubvolumes(root) {
       submit: 'Create snapshot',
     });
     if (r) perform(() => api('POST', `/api/fs/${state.fsId}/subvolumes/snapshot`,
-      { id: s.id, dest: r.dest, readonly: r.readonly }), 'Snapshot created');
+      { id: s.id, dest: r.dest, readonly: r.readonly }), 'Snapshot Created');
   }
 
   async function toggleReadonly(s) {
@@ -418,7 +415,7 @@ async function viewSubvolumes(root) {
 
   async function deleteSubvol(s) {
     const r = await ask({
-      title: 'Delete subvolume?',
+      title: 'Delete Subvolume?',
       message: `${s.path} (ID ${s.id}) and everything in it will be deleted. This cannot be undone.`,
       submit: 'Delete', danger: true,
     });
@@ -427,12 +424,12 @@ async function viewSubvolumes(root) {
 
   async function createDialog() {
     const r = await ask({
-      title: 'New subvolume',
+      title: 'Create Subvolume',
       fields: [{ name: 'path', label: 'Path', required: true, placeholder: '@data/photos',
         hint: 'Relative to the filesystem top level. The parent directory must exist.' }],
       submit: 'Create',
     });
-    if (r) perform(() => api('POST', `/api/fs/${state.fsId}/subvolumes/create`, { path: r.path }), 'Subvolume created');
+    if (r) perform(() => api('POST', `/api/fs/${state.fsId}/subvolumes/create`, { path: r.path }), 'Subvolume Created');
   }
 
   filter.addEventListener('input', () => { state.svFilter = filter.value; drawRows(); });
@@ -441,11 +438,11 @@ async function viewSubvolumes(root) {
   append(root, 
     h('div', { class: 'toolbar' },
       filter,
-      h('label', { class: 'check' }, hideSnapper, 'Hide snapper snapshots'),
+      h('label', { class: 'check' }, hideSnapper, 'hide snapper snapshots'),
       count,
       h('span', { class: 'spacer' }),
       infoLink('Subvolumes.html', 'subvolumes'),
-      h('button', { class: 'primary', onclick: createDialog }, 'New subvolume')),
+      h('button', { class: 'primary', onclick: createDialog }, '+ Create Subvolume')),
     d.top_level_mounted ? null : h('div', { class: 'panel warn' },
       'The filesystem top level (subvolid=5) is not mounted in this container, so some subvolumes are not reachable.'),
     panel(
@@ -555,24 +552,24 @@ async function viewSnapper(root) {
 
     async function createSnapshot() {
       const r = await ask({
-        title: 'Create snapshot',
+        title: 'Create Snapshot',
         fields: [
           { name: 'description', label: 'Description', value: 'manual' },
           { name: 'cleanup', label: 'Cleanup algorithm', type: 'select', value: '',
             options: [['', 'None (keep until deleted)'], ['number', 'number'], ['timeline', 'timeline']] },
         ],
-        submit: 'Create snapshot',
+        submit: 'Create Snapshot',
       });
-      if (r) perform(() => api('POST', `/api/snapper/${name}/snapshots`, r), 'Snapshot created');
+      if (r) perform(() => api('POST', `/api/snapper/${name}/snapshots`, r), 'Snapshot Created');
     }
 
     async function runCleanup() {
       const r = await ask({
-        title: 'Run cleanup',
+        title: 'Run Cleanup',
         message: 'Deletes snapshots that exceed the limits in the settings below.',
         fields: [{ name: 'algorithm', label: 'Algorithm', type: 'select', value: 'number',
           options: [['number', 'number'], ['timeline', 'timeline'], ['empty-pre-post', 'empty-pre-post']] }],
-        submit: 'Run cleanup',
+        submit: 'Run Cleanup',
       });
       if (r) perform(() => api('POST', `/api/snapper/${name}/cleanup`, r), 'Cleanup started (see Maintenance → Jobs)');
     }
@@ -609,7 +606,7 @@ async function viewSnapper(root) {
 
     body.replaceChildren(
       h('div', { class: 'toolbar' },
-        h('button', { class: 'primary', onclick: createSnapshot }, 'Create snapshot'),
+        h('button', { class: 'primary', onclick: createSnapshot }, 'Create Snapshot'),
         compareBtn, deleteBtn,
         h('span', { class: 'spacer' }),
         h('button', { onclick: runCleanup }, 'Run cleanup…')),
@@ -750,7 +747,7 @@ async function viewSchedules(root) {
     const snap = { name: 'type', is: ['snapshot'] };
     const bal = { name: 'type', is: ['balance'] };
     const r = await ask({
-      title: 'New schedule',
+      title: 'Create Schedule',
       fields: [
         { name: 'type', label: 'What to run', type: 'select', value: 'snapshot',
           options: [['snapshot', 'Snapshot with automatic cleanup'], ['scrub', 'Scrub'],
@@ -778,12 +775,12 @@ async function viewSchedules(root) {
         { name: 'time', label: 'At', type: 'time', value: '03:00', required: true,
           showIf: { name: 'frequency', is: ['daily', 'weekly', 'monthly'] } },
       ],
-      submit: 'Create schedule',
+      submit: 'Create',
     });
-    if (r) perform(() => api('POST', '/api/schedules', { ...r, fs: id }), 'Schedule created');
+    if (r) perform(() => api('POST', '/api/schedules', { ...r, fs: id }), 'Schedule Created');
   }
 
-  const newBtn = h('button', { class: 'primary', onclick: createDialog }, 'New schedule');
+  const newBtn = h('button', { class: 'primary', onclick: createDialog }, '+ Create Schedule');
   append(root, h('div', { class: 'toolbar' }, h('span', { class: 'spacer' }), newBtn), box);
   await refresh(true);
   state.timer = setInterval(() => refresh().catch(() => {}), 15000);
@@ -814,7 +811,7 @@ async function viewMaintenance(root) {
   // scrub
   const scrubStatus = h('div');
   const scrubRO = h('input', { type: 'checkbox' });
-  const scrubStart = h('button', { class: 'primary' }, 'Start scrub');
+  const scrubStart = h('button', { class: 'primary' }, 'Start Scrub');
   const scrubCancel = h('button', null, 'Cancel');
   const scrubResume = h('button', null, 'Resume');
   const scrubAct = (action) => perform(
@@ -827,11 +824,11 @@ async function viewMaintenance(root) {
   const balStatus = h('div');
   const dUsage = h('input', { type: 'number', min: 0, max: 100, value: 50, size: 4 });
   const mUsage = h('input', { type: 'number', min: 0, max: 100, value: 50, size: 4 });
-  const balStart = h('button', { class: 'primary' }, 'Start balance');
+  const balStart = h('button', { class: 'primary' }, 'Start Balance');
   const balCancel = h('button', null, 'Cancel');
   balStart.onclick = async () => {
     const r = await ask({
-      title: 'Start balance?',
+      title: 'Start Balance',
       message: 'Balance rewrites chunks and can take a long time and add load. ' +
         'Only chunks less than the given percent full are rewritten.',
       submit: 'Start',
@@ -841,7 +838,7 @@ async function viewMaintenance(root) {
       action: 'start',
       data_usage: dUsage.value === '' ? null : dUsage.value,
       metadata_usage: mUsage.value === '' ? null : mUsage.value,
-    }), 'Balance started');
+    }), 'Balance Started');
   };
   balCancel.onclick = () => perform(() => api('POST', `/api/fs/${id}/balance`, { action: 'cancel' }), 'Cancel requested');
 
@@ -854,10 +851,10 @@ async function viewMaintenance(root) {
   defragBtn.onclick = async () => {
     if (!defragPath.value.trim()) { flash('Enter a path to defragment', true); return; }
     const r = await ask({
-      title: 'Defragment?',
+      title: 'Defragment',
       message: 'Defragmenting breaks the sharing between snapshots and the original data, ' +
         'so space usage can grow a lot if the path has snapshots.',
-      submit: 'Defragment',
+      submit: 'Start',
     });
     if (!r) return;
     perform(() => api('POST', `/api/fs/${id}/defrag`, {
@@ -866,8 +863,8 @@ async function viewMaintenance(root) {
     }), 'Defragment started');
   };
 
-  const trimBtn = h('button', null, 'Run trim');
-  trimBtn.onclick = () => perform(() => api('POST', `/api/fs/${id}/trim`, {}), 'Trim started');
+  const trimBtn = h('button', null, 'Run Trim');
+  trimBtn.onclick = () => perform(() => api('POST', `/api/fs/${id}/trim`, {}), 'Trim Started');
 
   const jobsBox = h('div');
 
