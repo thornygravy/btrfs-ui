@@ -847,7 +847,7 @@ async function viewMaintenance(root) {
   const defragComp = h('select', null, [['', 'No recompression'], ['zstd', 'zstd'], ['zlib', 'zlib'], ['lzo', 'lzo']]
     .map(([v, l]) => h('option', { value: v }, l)));
   const defragSize = h('input', { type: 'text', placeholder: '32M', size: 6 });
-  const defragBtn = h('button', null, 'Defragment');
+  const defragBtn = h('button', null, 'Run');
   defragBtn.onclick = async () => {
     if (!defragPath.value.trim()) { flash('Enter a path to defragment', true); return; }
     const r = await ask({
@@ -863,7 +863,7 @@ async function viewMaintenance(root) {
     }), 'Defragment started');
   };
 
-  const trimBtn = h('button', null, 'Run Trim');
+  const trimBtn = h('button', null, 'Run');
   trimBtn.onclick = () => perform(() => api('POST', `/api/fs/${id}/trim`, {}), 'Trim Started');
 
   const jobsBox = h('div');
